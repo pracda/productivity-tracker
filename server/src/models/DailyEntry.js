@@ -1,0 +1,81 @@
+const mongoose = require("mongoose");
+
+const DailyEntryTaskSchema = new mongoose.Schema(
+  {
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    done: {
+      type: Boolean,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ["active", "completed", "moved"],
+      default: "active",
+    },
+    movedToDate: {
+      type: String,
+      default: null,
+    },
+    type: {
+      type: String,
+      enum: ["personal", "template", "extra"],
+      required: true,
+    },
+    sourceTaskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+    },
+    carryOver: {
+      type: Boolean,
+      default: false,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: true }
+);
+
+const DailyEntrySchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
+    date: {
+      type: String,
+      required: true,
+    },
+    tasks: {
+      type: [DailyEntryTaskSchema],
+      default: [],
+    },
+    completionPercentage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    endOfDayProcessed: {
+      type: Boolean,
+      default: false,
+    },
+    endOfDayAction: {
+      type: String,
+      enum: ["carryOver", "delete", null],
+      default: null,
+    },
+  },
+  { timestamps: true }
+);
+
+DailyEntrySchema.index({ userId: 1, date: 1 }, { unique: true });
+
+module.exports = mongoose.model("DailyEntry", DailyEntrySchema);
