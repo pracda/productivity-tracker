@@ -1,13 +1,29 @@
-const requireAuth = (req, res, next) => {
-  // Placeholder for future auth implementation.
-  // In Step 14, this middleware will:
-  // 1. read JWT or session
-  // 2. verify user identity
-  // 3. attach req.user
-  // 4. block unauthenticated access
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-  req.user = null;
-  next();
+const requireAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
 };
 
 module.exports = requireAuth;

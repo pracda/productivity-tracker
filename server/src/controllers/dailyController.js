@@ -20,7 +20,11 @@ const getDailyEntryByDate = async (req, res) => {
     }
 
     const weekday = parsed.day();
-    const entry = await getOrCreateDailyEntry({ date, weekday });
+    const entry = await getOrCreateDailyEntry({
+      userId: req.user._id,
+      date,
+      weekday,
+    });
 
     return res.json(sortTasksInEntry(entry));
   } catch (error) {
@@ -36,7 +40,7 @@ const createDailyEntry = async (req, res) => {
       return res.status(400).json({ message: "date is required" });
     }
 
-    const existingEntry = await DailyEntry.findOne({ date });
+    const existingEntry = await DailyEntry.findOne({ userId: req.user._id, date });
 
     if (existingEntry) {
       return res.status(409).json({ message: "Daily entry already exists" });
@@ -58,6 +62,7 @@ const createDailyEntry = async (req, res) => {
     const completionPercentage = calculateCompletionPercentage(normalizedTasks);
 
     const entry = await DailyEntry.create({
+      userId: req.user._id,
       date,
       tasks: normalizedTasks,
       completionPercentage,
@@ -76,7 +81,10 @@ const updateDailyTaskStatus = async (req, res) => {
     const { entryId, taskId } = req.params;
     const { done } = req.body;
 
-    const entry = await DailyEntry.findById(entryId);
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
 
     if (!entry) {
       return res.status(404).json({ message: "Daily entry not found" });
@@ -115,7 +123,10 @@ const addExtraTask = async (req, res) => {
       return res.status(400).json({ message: "text is required" });
     }
 
-    const entry = await DailyEntry.findById(entryId);
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
 
     if (!entry) {
       return res.status(404).json({ message: "Daily entry not found" });
@@ -151,7 +162,10 @@ const updateExtraTask = async (req, res) => {
       return res.status(400).json({ message: "text is required" });
     }
 
-    const entry = await DailyEntry.findById(entryId);
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
 
     if (!entry) {
       return res.status(404).json({ message: "Daily entry not found" });
@@ -185,7 +199,10 @@ const deleteExtraTask = async (req, res) => {
   try {
     const { entryId, taskId } = req.params;
 
-    const entry = await DailyEntry.findById(entryId);
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
 
     if (!entry) {
       return res.status(404).json({ message: "Daily entry not found" });
@@ -231,7 +248,10 @@ const processEndOfDay = async (req, res) => {
       });
     }
 
-    const currentEntry = await DailyEntry.findOne({ date });
+    const currentEntry = await DailyEntry.findOne({
+      userId: req.user._id,
+      date,
+    });
 
     if (!currentEntry) {
       return res.status(404).json({ message: "Daily entry not found" });
@@ -263,10 +283,14 @@ const processEndOfDay = async (req, res) => {
     const nextDate = dayjs(date).add(1, "day").format("YYYY-MM-DD");
     const nextWeekday = dayjs(nextDate).day();
 
-    let nextEntry = await DailyEntry.findOne({ date: nextDate });
+    let nextEntry = await DailyEntry.findOne({
+      userId: req.user._id,
+      date: nextDate,
+    });
 
     if (!nextEntry) {
       nextEntry = await getOrCreateDailyEntry({
+        userId: req.user._id,
         date: nextDate,
         weekday: nextWeekday,
       });

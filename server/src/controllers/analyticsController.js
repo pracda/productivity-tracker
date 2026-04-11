@@ -7,10 +7,13 @@ const getAnalytics = async (req, res) => {
     const last30Days = dayjs().subtract(29, "day").format("YYYY-MM-DD");
 
     const dailyEntries = await DailyEntry.find({
+      userId: req.user._id,
       date: { $gte: last30Days },
     }).sort({ date: 1 });
 
-    const weeklyPlans = await WeeklyPlan.find().sort({ weekStart: 1 });
+    const weeklyPlans = await WeeklyPlan.find({
+      userId: req.user._id,
+    }).sort({ weekStart: 1 });
 
     const dailyTrend = dailyEntries.map((entry) => ({
       date: entry.date,

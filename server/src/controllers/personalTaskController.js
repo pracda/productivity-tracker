@@ -2,13 +2,18 @@ const PersonalTask = require("../models/PersonalTask");
 
 const getPersonalTasks = async (req, res) => {
   try {
-    let personalTaskDoc = await PersonalTask.findOne();
+    let doc = await PersonalTask.findOne({ userId: req.user._id });
 
-    if (!personalTaskDoc) {
-      personalTaskDoc = await PersonalTask.create({ tasks: [] });
+    if (!doc) {
+      doc = await PersonalTask.create({
+        userId: req.user._id,
+        tasks: [],
+      });
     }
 
-    return res.json(personalTaskDoc);
+    doc.tasks = doc.tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    return res.json(doc);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -22,16 +27,27 @@ const updatePersonalTasks = async (req, res) => {
       return res.status(400).json({ message: "tasks must be an array" });
     }
 
-    let personalTaskDoc = await PersonalTask.findOne();
+    const sanitizedTasks = tasks
+      .filter((task) => task && typeof task.text === "string" && task.text.trim())
+      .map((task, index) => ({
+        text: task.text.trim(),
+        isActive: task.isActive !== false,
+        order: index + 1,
+      }));
 
-    if (!personalTaskDoc) {
-      personalTaskDoc = new PersonalTask({ tasks: [] });
+    let doc = await PersonalTask.findOne({ userId: req.user._id });
+
+    if (!doc) {
+      doc = await PersonalTask.create({
+        userId: req.user._id,
+        tasks: sanitizedTasks,
+      });
+    } else {
+      doc.tasks = sanitizedTasks;
+      await doc.save();
     }
 
-    personalTaskDoc.tasks = tasks;
-    await personalTaskDoc.save();
-
-    return res.json(personalTaskDoc);
+    return res.json(doc);
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

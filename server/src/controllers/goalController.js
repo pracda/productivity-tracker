@@ -9,7 +9,7 @@ const normalizeProgress = (value) => {
 
 const getGoals = async (req, res) => {
   try {
-    const goals = await Goal.find().sort({ createdAt: -1 });
+    const goals = await Goal.find({ userId: req.user._id }).sort({ createdAt: -1 });
     return res.json(goals);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -33,6 +33,7 @@ const createGoal = async (req, res) => {
     }
 
     const goal = await Goal.create({
+      userId: req.user._id,
       title: title.trim(),
       type,
       targetDate,
@@ -50,7 +51,7 @@ const updateGoal = async (req, res) => {
     const { id } = req.params;
     const { title, type, targetDate, progress } = req.body;
 
-    const goal = await Goal.findById(id);
+    const goal = await Goal.findOne({ _id: id, userId: req.user._id });
 
     if (!goal) {
       return res.status(404).json({ message: "Goal not found" });
@@ -106,6 +107,7 @@ const updateGoal = async (req, res) => {
 
     if (changes.length > 0) {
       await GoalHistory.create({
+        userId: req.user._id,
         goalId: goal._id,
         changedAt: new Date(),
         changes,
@@ -122,7 +124,10 @@ const getGoalHistory = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const history = await GoalHistory.find({ goalId: id }).sort({ changedAt: -1 });
+    const history = await GoalHistory.find({
+      userId: req.user._id,
+      goalId: id,
+    }).sort({ changedAt: -1 });
 
     return res.json(history);
   } catch (error) {

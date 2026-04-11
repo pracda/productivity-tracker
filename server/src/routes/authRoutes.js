@@ -1,11 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const authController = require("../controllers/authController");
 
-router.get("/status", (req, res) => {
-  return res.json({
-    authenticated: false,
-    message: "Auth not implemented yet",
-  });
-});
+router.get("/status", authController.getAuthStatus);
+router.post("/google", authController.googleLogin);
 
 module.exports = router;

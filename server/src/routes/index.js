@@ -6,6 +6,7 @@ const weeklyRoutes = require("./weeklyRoutes");
 const goalRoutes = require("./goalRoutes");
 const analyticsRoutes = require("./analyticsRoutes");
 const authRoutes = require("./authRoutes");
+const requireAuth = require("../middleware/requireAuth");
 
 const router = express.Router();
 
@@ -14,11 +15,12 @@ router.get("/health", (req, res) => {
 });
 
 router.use("/auth", authRoutes);
-router.use("/daily", dailyRoutes);
-router.use("/personal-tasks", personalTaskRoutes);
-router.use("/daily-templates", dailyTemplateRoutes);
-router.use("/weekly", weeklyRoutes);
-router.use("/goals", goalRoutes);
-router.use("/analytics", analyticsRoutes);
+
+router.use("/daily", requireAuth, dailyRoutes);
+router.use("/personal-tasks", requireAuth, personalTaskRoutes);
+router.use("/daily-templates", requireAuth, dailyTemplateRoutes);
+router.use("/weekly", requireAuth, weeklyRoutes);
+router.use("/goals", requireAuth, goalRoutes);
+router.use("/analytics", requireAuth, analyticsRoutes);
 
 module.exports = router;

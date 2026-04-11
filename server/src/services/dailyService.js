@@ -44,15 +44,15 @@ const buildDailyTasks = ({ personalTasks = [], templateTasks = [] }) => {
   return [...mappedPersonalTasks, ...mappedTemplateTasks];
 };
 
-const getOrCreateDailyEntry = async ({ date, weekday }) => {
-  let entry = await DailyEntry.findOne({ date });
+const getOrCreateDailyEntry = async ({ userId, date, weekday }) => {
+  let entry = await DailyEntry.findOne({ userId, date });
 
   if (entry) {
     return entry;
   }
 
-  const personalTaskDoc = await PersonalTask.findOne();
-  const dailyTemplateDoc = await DailyTemplate.findOne({ weekday });
+  const personalTaskDoc = await PersonalTask.findOne({ userId });
+  const dailyTemplateDoc = await DailyTemplate.findOne({ userId, weekday });
 
   const personalTasks = personalTaskDoc?.tasks || [];
   const templateTasks = dailyTemplateDoc?.tasks || [];
@@ -61,9 +61,12 @@ const getOrCreateDailyEntry = async ({ date, weekday }) => {
   const completionPercentage = calculateCompletionPercentage(tasks);
 
   entry = await DailyEntry.create({
+    userId,
     date,
     tasks,
     completionPercentage,
+    endOfDayProcessed: false,
+    endOfDayAction: null,
   });
 
   return entry;

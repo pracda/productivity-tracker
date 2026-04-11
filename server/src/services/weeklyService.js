@@ -3,7 +3,7 @@ const WeeklyPlan = require("../models/WeeklyPlan");
 const DailyEntry = require("../models/DailyEntry");
 
 const getWeekStart = (date = dayjs()) => {
-  const day = date.day(); // 0=Sun, 1=Mon ... 6=Sat
+  const day = date.day();
   const diffToMonday = day === 0 ? -6 : 1 - day;
   return date.add(diffToMonday, "day").format("YYYY-MM-DD");
 };
@@ -24,10 +24,11 @@ const calculateTaskCompletionPercentage = (tasks = []) => {
   return Math.round((completed / tasks.length) * 100);
 };
 
-const calculateDailyConsistencyPercentage = async (weekStart) => {
+const calculateDailyConsistencyPercentage = async (userId, weekStart) => {
   const { start, end } = getWeekDateRange(weekStart);
 
   const dailyEntries = await DailyEntry.find({
+    userId,
     date: { $gte: start, $lte: end },
   }).sort({ date: 1 });
 
@@ -50,13 +51,14 @@ const calculateWeeklyScore = (
   );
 };
 
-const getOrCreateCurrentWeeklyPlan = async () => {
+const getOrCreateCurrentWeeklyPlan = async (userId) => {
   const weekStart = getWeekStart();
 
-  let weeklyPlan = await WeeklyPlan.findOne({ weekStart });
+  let weeklyPlan = await WeeklyPlan.findOne({ userId, weekStart });
 
   if (!weeklyPlan) {
     weeklyPlan = await WeeklyPlan.create({
+      userId,
       weekStart,
       tasks: [],
       dailyCompletion: [],
@@ -71,7 +73,7 @@ const getOrCreateCurrentWeeklyPlan = async () => {
   );
 
   weeklyPlan.dailyConsistencyPercentage =
-    await calculateDailyConsistencyPercentage(weeklyPlan.weekStart);
+    await calculateDailyConsistencyPercentage(userId, weeklyPlan.weekStart);
 
   weeklyPlan.weeklyScore = calculateWeeklyScore(
     weeklyPlan.taskCompletionPercentage,
