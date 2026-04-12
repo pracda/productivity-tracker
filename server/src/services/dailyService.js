@@ -65,8 +65,11 @@ const getOrCreateDailyEntry = async ({ userId, date, weekday }) => {
     date,
     tasks,
     completionPercentage,
+    summary: "",
     endOfDayProcessed: false,
     endOfDayAction: null,
+    isClosed: false,
+    closedAt: null,
   });
 
   return entry;

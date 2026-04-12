@@ -7,6 +7,37 @@ const normalizeProgress = (value) => {
   return Math.max(0, Math.min(100, num));
 };
 
+const buildMilestones = (incomingMilestones = [], existingMilestones = []) => {
+  return incomingMilestones
+    .filter(
+      (milestone) =>
+        milestone &&
+        typeof milestone.text === "string" &&
+        milestone.text.trim()
+    )
+    .map((milestone, index) => {
+      const existing = existingMilestones[index];
+      const isDone = !!milestone.done;
+      const wasDone = !!existing?.done;
+
+      let achievedAt = existing?.achievedAt || null;
+
+      if (!wasDone && isDone) {
+        achievedAt = new Date();
+      }
+
+      if (!isDone) {
+        achievedAt = null;
+      }
+
+      return {
+        text: milestone.text.trim(),
+        done: isDone,
+        achievedAt,
+      };
+    });
+};
+
 const getGoals = async (req, res) => {
   try {
     const goals = await Goal.find({ userId: req.user._id }).sort({ createdAt: -1 });
@@ -18,7 +49,14 @@ const getGoals = async (req, res) => {
 
 const createGoal = async (req, res) => {
   try {
-    const { title, type, targetDate, progress = 0 } = req.body;
+    const {
+      title,
+      type,
+      targetDate,
+      progress = 0,
+      notes = "",
+      milestones = [],
+    } = req.body;
 
     if (!title || !title.trim() || !type || !targetDate) {
       return res
@@ -32,12 +70,17 @@ const createGoal = async (req, res) => {
       return res.status(400).json({ message: "progress must be a number" });
     }
 
+    const sanitizedMilestones = buildMilestones(milestones, []);
+
     const goal = await Goal.create({
       userId: req.user._id,
       title: title.trim(),
       type,
       targetDate,
       progress: normalizedProgress,
+      notes: typeof notes === "string" ? notes.trim() : "",
+      archived: false,
+      milestones: sanitizedMilestones,
     });
 
     return res.status(201).json(goal);
@@ -49,7 +92,7 @@ const createGoal = async (req, res) => {
 const updateGoal = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, type, targetDate, progress } = req.body;
+    const { title, type, targetDate, progress, notes, archived, milestones } = req.body;
 
     const goal = await Goal.findOne({ _id: id, userId: req.user._id });
 
@@ -101,6 +144,36 @@ const updateGoal = async (req, res) => {
         });
         goal.progress = normalizedProgress;
       }
+    }
+
+    if (typeof notes === "string" && notes.trim() !== (goal.notes || "")) {
+      changes.push({
+        field: "notes",
+        oldValue: goal.notes || "",
+        newValue: notes.trim(),
+      });
+      goal.notes = notes.trim();
+    }
+
+    if (typeof archived === "boolean" && archived !== goal.archived) {
+      changes.push({
+        field: "archived",
+        oldValue: goal.archived,
+        newValue: archived,
+      });
+      goal.archived = archived;
+    }
+
+    if (Array.isArray(milestones)) {
+      const sanitizedMilestones = buildMilestones(milestones, goal.milestones || []);
+
+      changes.push({
+        field: "milestones",
+        oldValue: goal.milestones,
+        newValue: sanitizedMilestones,
+      });
+
+      goal.milestones = sanitizedMilestones;
     }
 
     await goal.save();

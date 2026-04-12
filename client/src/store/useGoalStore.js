@@ -18,40 +18,47 @@ const useGoalStore = create((set, get) => ({
     try {
       const data = await getGoals();
       set({ goals: data, loading: false });
+      return data;
     } catch (error) {
       set({
         loading: false,
         error: error.response?.data?.message || "Failed to load goals",
       });
+      return null;
     }
   },
 
   createNewGoal: async (payload) => {
     try {
-      const goal = await createGoal(payload);
-      set({ goals: [goal, ...get().goals] });
+      const created = await createGoal(payload);
+      set((state) => ({
+        goals: [created, ...state.goals],
+      }));
+      return created;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to create goal",
       });
+      return null;
     }
   },
 
   updateExistingGoal: async (goalId, payload) => {
     try {
-      const updatedGoal = await updateGoal(goalId, payload);
+      const updated = await updateGoal(goalId, payload);
 
-      set({
-        goals: get().goals.map((goal) =>
-          goal._id === goalId ? updatedGoal : goal
+      set((state) => ({
+        goals: state.goals.map((goal) =>
+          goal._id === goalId ? updated : goal
         ),
-      });
+      }));
 
-      await get().fetchGoalHistory(goalId);
+      return updated;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to update goal",
       });
+      return null;
     }
   },
 
@@ -59,16 +66,19 @@ const useGoalStore = create((set, get) => ({
     try {
       const history = await getGoalHistory(goalId);
 
-      set({
+      set((state) => ({
         historyByGoalId: {
-          ...get().historyByGoalId,
+          ...state.historyByGoalId,
           [goalId]: history,
         },
-      });
+      }));
+
+      return history;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to load goal history",
       });
+      return null;
     }
   },
 }));

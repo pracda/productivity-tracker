@@ -66,8 +66,11 @@ const createDailyEntry = async (req, res) => {
       date,
       tasks: normalizedTasks,
       completionPercentage,
+      summary: "",
       endOfDayProcessed: false,
       endOfDayAction: null,
+      isClosed: false,
+      closedAt: null,
     });
 
     return res.status(201).json(sortTasksInEntry(entry));
@@ -88,6 +91,10 @@ const updateDailyTaskStatus = async (req, res) => {
 
     if (!entry) {
       return res.status(404).json({ message: "Daily entry not found" });
+    }
+
+    if (entry.isClosed) {
+      return res.status(400).json({ message: "This day is already closed" });
     }
 
     const task = entry.tasks.id(taskId);
@@ -132,6 +139,10 @@ const addExtraTask = async (req, res) => {
       return res.status(404).json({ message: "Daily entry not found" });
     }
 
+    if (entry.isClosed) {
+      return res.status(400).json({ message: "This day is already closed" });
+    }
+
     entry.tasks.push({
       text: text.trim(),
       done: false,
@@ -171,6 +182,10 @@ const updateExtraTask = async (req, res) => {
       return res.status(404).json({ message: "Daily entry not found" });
     }
 
+    if (entry.isClosed) {
+      return res.status(400).json({ message: "This day is already closed" });
+    }
+
     const task = entry.tasks.id(taskId);
 
     if (!task) {
@@ -208,6 +223,10 @@ const deleteExtraTask = async (req, res) => {
       return res.status(404).json({ message: "Daily entry not found" });
     }
 
+    if (entry.isClosed) {
+      return res.status(400).json({ message: "This day is already closed" });
+    }
+
     const task = entry.tasks.id(taskId);
 
     if (!task) {
@@ -234,9 +253,36 @@ const deleteExtraTask = async (req, res) => {
   }
 };
 
+const updateDailySummary = async (req, res) => {
+  try {
+    const { entryId } = req.params;
+    const { summary } = req.body;
+
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Daily entry not found" });
+    }
+
+    if (entry.isClosed) {
+      return res.status(400).json({ message: "This day is already closed" });
+    }
+
+    entry.summary = typeof summary === "string" ? summary.trim() : "";
+    await entry.save();
+
+    return res.json(sortTasksInEntry(entry));
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 const processEndOfDay = async (req, res) => {
   try {
-    const { date, action } = req.body;
+    const { date, action, summary } = req.body;
 
     if (!date) {
       return res.status(400).json({ message: "date is required" });
@@ -257,10 +303,14 @@ const processEndOfDay = async (req, res) => {
       return res.status(404).json({ message: "Daily entry not found" });
     }
 
-    if (currentEntry.endOfDayProcessed) {
+    if (currentEntry.isClosed || currentEntry.endOfDayProcessed) {
       return res.status(409).json({
-        message: `End of day already processed with action: ${currentEntry.endOfDayAction}`,
+        message: "This day has already been closed",
       });
+    }
+
+    if (typeof summary === "string") {
+      currentEntry.summary = summary.trim();
     }
 
     const incompleteTasks = currentEntry.tasks.filter(
@@ -270,6 +320,9 @@ const processEndOfDay = async (req, res) => {
     if (action === "delete") {
       currentEntry.endOfDayProcessed = true;
       currentEntry.endOfDayAction = "delete";
+      currentEntry.isClosed = true;
+      currentEntry.closedAt = new Date();
+
       await currentEntry.save();
 
       return res.json({
@@ -322,6 +375,9 @@ const processEndOfDay = async (req, res) => {
     );
     currentEntry.endOfDayProcessed = true;
     currentEntry.endOfDayAction = "carryOver";
+    currentEntry.isClosed = true;
+    currentEntry.closedAt = new Date();
+
     await currentEntry.save();
 
     return res.json({
@@ -336,6 +392,32 @@ const processEndOfDay = async (req, res) => {
   }
 };
 
+const reopenDay = async (req, res) => {
+  try {
+    const { entryId } = req.params;
+
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Daily entry not found" });
+    }
+
+    entry.isClosed = false;
+    entry.closedAt = null;
+    entry.endOfDayProcessed = false;
+    entry.endOfDayAction = null;
+
+    await entry.save();
+
+    return res.json(sortTasksInEntry(entry));
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getDailyEntryByDate,
   createDailyEntry,
@@ -343,5 +425,7 @@ module.exports = {
   addExtraTask,
   updateExtraTask,
   deleteExtraTask,
+  updateDailySummary,
   processEndOfDay,
+  reopenDay,
 };

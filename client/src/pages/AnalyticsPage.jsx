@@ -20,10 +20,27 @@ const PIE_COLORS = ["#3b82f6", "#6b7280", "#111827", "#f59e0b"];
 
 function SummaryCard({ title, value, subtitle }) {
   return (
-    <div className="metric-card">
+    <div className="metric-card polished-analytics-card">
       <div className="metric-card-title">{title}</div>
       <div className="metric-card-value">{value}</div>
       <div className="metric-card-subtitle">{subtitle}</div>
+    </div>
+  );
+}
+
+function ChartCard({ title, subtitle, children }) {
+  return (
+    <div className="progress-card analytics-chart-card">
+      <div className="progress-top">
+        <div>
+          <h3 className="card-title">{title}</h3>
+          <p className="progress-meta" style={{ marginTop: "4px" }}>
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div className="analytics-chart-wrap">{children}</div>
     </div>
   );
 }
@@ -51,11 +68,13 @@ function AnalyticsPage() {
 
   return (
     <div className="daily-page">
-      <div>
-        <h2 className="section-title">Analytics</h2>
-        <p className="section-subtitle">
-          Track consistency and performance trends
-        </p>
+      <div className="daily-topbar">
+        <div className="daily-topbar-left">
+          <h2 className="section-title">Analytics</h2>
+          <p className="section-subtitle">
+            Insights into consistency, momentum, and completion patterns
+          </p>
+        </div>
       </div>
 
       {loading && <p>Loading analytics...</p>}
@@ -109,14 +128,12 @@ function AnalyticsPage() {
             />
           </div>
 
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Daily Completion Trend</h3>
-              <span className="task-meta">Last 30 days</span>
-            </div>
-
-            <div style={{ width: "100%", height: 300, marginTop: "12px" }}>
-              <ResponsiveContainer>
+          <div className="analytics-two-column">
+            <ChartCard
+              title="Daily Completion Trend"
+              subtitle="Last 30 days"
+            >
+              <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={analytics.dailyTrend}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
@@ -125,44 +142,17 @@ function AnalyticsPage() {
                   <Line
                     type="monotone"
                     dataKey="completionPercentage"
-                    strokeWidth={2}
+                    strokeWidth={3}
                   />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          </div>
+            </ChartCard>
 
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Weekly Score Trend</h3>
-              <span className="task-meta">Weekly performance</span>
-            </div>
-
-            <div style={{ width: "100%", height: 300, marginTop: "12px" }}>
-              <ResponsiveContainer>
-                <LineChart data={analytics.weeklyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="weekStart" />
-                  <YAxis domain={[0, 100]} />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="weeklyScore"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Task Composition</h3>
-              <span className="task-meta">Last 30 days</span>
-            </div>
-
-            <div style={{ width: "100%", height: 320, marginTop: "12px" }}>
-              <ResponsiveContainer>
+            <ChartCard
+              title="Task Composition"
+              subtitle="Distribution across the last 30 days"
+            >
+              <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={analytics.taskComposition || []}
@@ -184,29 +174,52 @@ function AnalyticsPage() {
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            </ChartCard>
           </div>
 
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Weekly Score Breakdown</h3>
-              <span className="task-meta">Score components by week</span>
-            </div>
+          <div className="analytics-two-column">
+            <ChartCard
+              title="Weekly Score Trend"
+              subtitle="Weekly performance over time"
+            >
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={analytics.weeklyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="weekStart" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Line
+                    type="monotone"
+                    dataKey="weeklyScore"
+                    strokeWidth={3}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
 
-            <div style={{ width: "100%", height: 320, marginTop: "12px" }}>
-              <ResponsiveContainer>
+            <ChartCard
+              title="Weekly Score Breakdown"
+              subtitle="Compare score components by week"
+            >
+              <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analytics.weeklyTrend || []}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="weekStart" />
                   <YAxis domain={[0, 100]} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="taskCompletionPercentage" name="Task Completion %" />
-                  <Bar dataKey="dailyConsistencyPercentage" name="Daily Consistency %" />
+                  <Bar
+                    dataKey="taskCompletionPercentage"
+                    name="Task Completion %"
+                  />
+                  <Bar
+                    dataKey="dailyConsistencyPercentage"
+                    name="Daily Consistency %"
+                  />
                   <Bar dataKey="weeklyScore" name="Weekly Score %" />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
+            </ChartCard>
           </div>
         </>
       )}

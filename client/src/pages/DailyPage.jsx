@@ -3,12 +3,11 @@ import dayjs from "dayjs";
 import useDailyStore from "../store/useDailyStore";
 import useSettingsStore from "../store/useSettingsStore";
 import useToastStore from "../store/useToastStore";
-import DailyHeader from "../components/daily/DailyHeader";
-import DailyProgressCard from "../components/daily/DailyProgressCard";
 import DailyTaskList from "../components/daily/DailyTaskList";
 import AddTaskForm from "../components/daily/AddTaskForm";
 import TaskEditor from "../components/daily/TaskEditor";
 import EndOfDayPanel from "../components/daily/EndOfDayPanel";
+import DailyCompletionDonut from "../components/daily/DailyCompletionDonut";
 
 const getCountdownToEndOfDay = (date) => {
   const now = dayjs();
@@ -54,6 +53,8 @@ function DailyPage() {
     createExtraTask,
     editExtraTask,
     removeExtraTask,
+    saveSummary,
+    reopenDay,
     runEndOfDay,
   } = useDailyStore();
 
@@ -74,6 +75,8 @@ function DailyPage() {
     getCountdownToEndOfDay(dayjs().format("YYYY-MM-DD"))
   );
   const [showSetup, setShowSetup] = useState(false);
+  const [dailySummary, setDailySummary] = useState("");
+  const [savingSummary, setSavingSummary] = useState(false);
 
   useEffect(() => {
     fetchDailyEntry(selectedDate);
@@ -88,6 +91,10 @@ function DailyPage() {
 
     return () => clearInterval(interval);
   }, [selectedDate]);
+
+  useEffect(() => {
+    setDailySummary(entry?.summary || "");
+  }, [entry?.summary]);
 
   const selectedDateLabel = useMemo(() => {
     return dayjs(selectedDate).format("dddd, MMMM D, YYYY");
@@ -106,28 +113,41 @@ function DailyPage() {
 
   const endOfDayProcessed = entry?.endOfDayProcessed || false;
   const endOfDayAction = entry?.endOfDayAction || null;
+  const isClosed = entry?.isClosed || false;
+  const closedAt = entry?.closedAt || null;
 
   const handleCarryOver = async () => {
-    const result = await runEndOfDay(selectedDate, "carryOver");
+    const result = await runEndOfDay(selectedDate, "carryOver", dailySummary);
 
     if (result) {
       showToast({
         message: `Moved ${result.movedCount} incomplete task(s) to ${result.nextDate}`,
         type: "success",
       });
-      setSelectedDate(result.nextDate);
+      await fetchDailyEntry(selectedDate);
     }
   };
 
   const handleDeleteEndOfDay = async () => {
-    const result = await runEndOfDay(selectedDate, "delete");
+    const result = await runEndOfDay(selectedDate, "delete", dailySummary);
 
     if (result) {
       showToast({
-        message: "Incomplete tasks were not carried forward.",
+        message: "Day closed without carrying forward incomplete tasks.",
         type: "info",
       });
       await fetchDailyEntry(selectedDate);
+    }
+  };
+
+  const handleReopenDay = async () => {
+    const result = await reopenDay();
+
+    if (result) {
+      showToast({
+        message: "Day reopened.",
+        type: "success",
+      });
     }
   };
 
@@ -155,118 +175,187 @@ function DailyPage() {
     });
   };
 
+  const handleSaveSummary = async () => {
+    setSavingSummary(true);
+    const result = await saveSummary(dailySummary);
+
+    if (result) {
+      showToast({
+        message: "Daily summary saved.",
+        type: "success",
+      });
+    }
+
+    setSavingSummary(false);
+  };
+
   return (
     <div className="daily-page">
-      <DailyHeader todayLabel={selectedDateLabel} countdown={countdown} />
+      <div className="daily-topbar">
+        <div className="daily-topbar-left">
+          <h2 className="section-title">Today</h2>
+          <p className="section-subtitle">{selectedDateLabel}</p>
+        </div>
 
-      <div className="progress-card">
-        <label
-          className="task-meta"
-          style={{ display: "block", marginBottom: "8px" }}
-        >
-          View Date
-        </label>
-
-        <input
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          style={{
-            padding: "12px 14px",
-            borderRadius: "10px",
-            border: "1px solid #d1d5db",
-            fontSize: "14px",
-            width: "100%",
-            maxWidth: "260px",
-          }}
-        />
+        <div className="daily-topbar-right">
+          <label className="topbar-date-label">Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="topbar-date-input"
+          />
+        </div>
       </div>
+
+      {isClosed && (
+        <div className="closed-day-banner">
+          This day is closed. Tasks and summary are locked.
+        </div>
+      )}
 
       {loading && <p>Loading selected day’s tasks...</p>}
       {error && <p className="error-text">{error}</p>}
 
       {!loading && (
-        <>
-          <DailyProgressCard
-            completionPercentage={completionPercentage}
-            totalTasks={totalTasks}
-            completedTasks={completedTasks}
-          />
-
-          <EndOfDayPanel
-            incompleteCount={incompleteCount}
-            endOfDayProcessed={endOfDayProcessed}
-            endOfDayAction={endOfDayAction}
-            onCarryOver={handleCarryOver}
-            onDelete={handleDeleteEndOfDay}
-          />
-
-          <AddTaskForm onAdd={handleAddExtraTask} disabled={!entry} />
-
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Today’s Focus</h3>
-              <span className="task-meta">{incompleteCount} remaining</span>
-            </div>
-            <p className="progress-meta">
-              Stay focused on what is still active for this day.
-            </p>
-          </div>
-
-          <DailyTaskList
-            tasks={tasks}
-            onToggle={toggleTask}
-            onEditExtra={handleEditExtraTask}
-            onDeleteExtra={handleDeleteExtraTask}
-          />
-
-          <div className="goal-actions">
-            <button onClick={() => setShowSetup((prev) => !prev)}>
-              {showSetup ? "Hide Setup" : "Manage Daily Templates"}
-            </button>
-          </div>
-
-          {showSetup && (
-            <div className="daily-page">
-              <TaskEditor
-                title="Personal Tasks (Every Day)"
-                tasks={personalTasks}
-                onSave={savePersonalTasks}
-              />
-
-              <div className="progress-card">
-                <div className="progress-top">
-                  <h3 className="card-title">Weekday Template Tasks</h3>
+        <div className="daily-command-layout">
+          <div className="daily-main-column">
+            <div className="progress-card daily-main-hero">
+              <div className="progress-top">
+                <div>
+                  <h3 className="card-title">Today’s Focus</h3>
+                  <p className="progress-meta">
+                    {incompleteCount} active task{incompleteCount === 1 ? "" : "s"} remaining
+                  </p>
                 </div>
 
-                <select
-                  value={selectedWeekday}
-                  onChange={(e) => fetchTemplate(Number(e.target.value))}
-                  style={{
-                    padding: "12px 14px",
-                    borderRadius: "10px",
-                    border: "1px solid #d1d5db",
-                    marginBottom: "16px",
-                  }}
-                >
-                  {weekdayOptions.map((day) => (
-                    <option key={day.value} value={day.value}>
-                      {day.label}
-                    </option>
-                  ))}
-                </select>
-
-                <TaskEditor
-                  title={`Template for ${
-                    weekdayOptions.find((d) => d.value === selectedWeekday)?.label
-                  }`}
-                  tasks={currentTemplate}
-                  onSave={(tasks) => saveTemplate(selectedWeekday, tasks)}
-                />
+                <div className="hero-focus-chip">
+                  {completedTasks}/{totalTasks || 0} completed
+                </div>
               </div>
             </div>
-          )}
-        </>
+
+            <AddTaskForm onAdd={handleAddExtraTask} disabled={isClosed || !entry} />
+
+            <DailyTaskList
+              tasks={tasks}
+              onToggle={toggleTask}
+              onEditExtra={handleEditExtraTask}
+              onDeleteExtra={handleDeleteExtraTask}
+              disabled={isClosed}
+            />
+
+            <div className="progress-card">
+              <div className="progress-top">
+                <h3 className="card-title">Daily Summary</h3>
+                <span className="task-meta">Reflection / notes</span>
+              </div>
+
+              <textarea
+                className="daily-summary-input"
+                placeholder={
+                  isClosed
+                    ? "This day is closed"
+                    : "Write a short summary of today, what went well, what needs follow-up tomorrow..."
+                }
+                value={dailySummary}
+                onChange={(e) => setDailySummary(e.target.value)}
+                rows={6}
+                disabled={isClosed}
+              />
+
+              <div className="goal-actions" style={{ marginTop: "12px" }}>
+                <button onClick={handleSaveSummary} disabled={savingSummary || isClosed}>
+                  {savingSummary ? "Saving..." : "Save Summary"}
+                </button>
+              </div>
+            </div>
+
+            <div className="goal-actions">
+              <button onClick={() => setShowSetup((prev) => !prev)}>
+                {showSetup ? "Hide Setup" : "Manage Daily Templates"}
+              </button>
+            </div>
+
+            {showSetup && (
+              <div className="daily-page">
+                <TaskEditor
+                  title="Personal Tasks (Every Day)"
+                  tasks={personalTasks}
+                  onSave={savePersonalTasks}
+                />
+
+                <div className="progress-card">
+                  <div className="progress-top">
+                    <h3 className="card-title">Weekday Template Tasks</h3>
+                  </div>
+
+                  <select
+                    value={selectedWeekday}
+                    onChange={(e) => fetchTemplate(Number(e.target.value))}
+                    style={{ marginBottom: "16px" }}
+                  >
+                    {weekdayOptions.map((day) => (
+                      <option key={day.value} value={day.value}>
+                        {day.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <TaskEditor
+                    title={`Template for ${
+                      weekdayOptions.find((d) => d.value === selectedWeekday)?.label
+                    }`}
+                    tasks={currentTemplate}
+                    onSave={(tasks) => saveTemplate(selectedWeekday, tasks)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <aside className="daily-side-column">
+            <div className="progress-card compact-side-card">
+              <div className="progress-top">
+                <h3 className="card-title">Time left today</h3>
+                <span className="task-meta">Until end of day</span>
+              </div>
+
+              <div className="sidebar-big-value">{countdown}</div>
+            </div>
+
+            <div className="progress-card compact-side-card">
+              <div className="progress-top">
+                <h3 className="card-title">Daily Completion</h3>
+                <span className="task-meta">{completionPercentage}%</span>
+              </div>
+
+              <DailyCompletionDonut value={completionPercentage} />
+
+              <div className="sidebar-stat-grid">
+                <div>
+                  <div className="sidebar-stat-label">Completed</div>
+                  <div className="sidebar-stat-value">{completedTasks}</div>
+                </div>
+                <div>
+                  <div className="sidebar-stat-label">Remaining</div>
+                  <div className="sidebar-stat-value">{incompleteCount}</div>
+                </div>
+              </div>
+            </div>
+
+            <EndOfDayPanel
+              incompleteCount={incompleteCount}
+              endOfDayProcessed={endOfDayProcessed}
+              endOfDayAction={endOfDayAction}
+              isClosed={isClosed}
+              closedAt={closedAt}
+              onCarryOver={handleCarryOver}
+              onDelete={handleDeleteEndOfDay}
+              onReopen={handleReopenDay}
+            />
+          </aside>
+        </div>
       )}
     </div>
   );

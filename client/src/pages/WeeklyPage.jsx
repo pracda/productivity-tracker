@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import useWeeklyStore from "../store/useWeeklyStore";
+import useToastStore from "../store/useToastStore";
 
 const getCountdownToSundayMidnight = () => {
   const now = dayjs();
@@ -19,12 +20,102 @@ const getCountdownToSundayMidnight = () => {
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 };
 
-function MetricCard({ title, value, subtitle }) {
+function WeeklyStatCard({ title, value, subtitle }) {
   return (
-    <div className="metric-card">
-      <div className="metric-card-title">{title}</div>
-      <div className="metric-card-value">{value}</div>
-      <div className="metric-card-subtitle">{subtitle}</div>
+    <div className="progress-card compact-side-card">
+      <div className="progress-top">
+        <h3 className="card-title">{title}</h3>
+      </div>
+      <div className="sidebar-big-value">{value}</div>
+      <p className="progress-meta" style={{ marginTop: "8px" }}>
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
+function WeeklyTaskRow({ task, onToggle, onEdit, onDelete }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftText, setDraftText] = useState(task.text || "");
+
+  useEffect(() => {
+    setDraftText(task.text || "");
+  }, [task.text]);
+
+  const handleSave = async () => {
+    const trimmed = draftText.trim();
+    if (!trimmed) return;
+
+    const result = await onEdit(task._id, trimmed);
+    if (result) {
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div className={`task-item ${task.done ? "task-done" : ""}`}>
+      <div className="task-checkbox-wrap">
+        <input
+          type="checkbox"
+          checked={task.done}
+          onChange={(e) => onToggle(task._id, e.target.checked)}
+        />
+      </div>
+
+      <div className="task-content">
+        <div className="task-top-row">
+          {isEditing ? (
+            <input
+              className="inline-task-input"
+              type="text"
+              value={draftText}
+              onChange={(e) => setDraftText(e.target.value)}
+              autoFocus
+            />
+          ) : (
+            <div className="task-text">{task.text}</div>
+          )}
+
+          <span className="task-badge badge-template">Weekly</span>
+        </div>
+
+        <div className="task-meta">
+          {task.done ? "Completed" : "Still in progress"}
+        </div>
+
+        <div className="task-actions">
+          {isEditing ? (
+            <>
+              <button type="button" onClick={handleSave}>
+                Save
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setDraftText(task.text || "");
+                  setIsEditing(false);
+                }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" onClick={() => setIsEditing(true)}>
+                Edit
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={() => onDelete(task._id)}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -37,7 +128,11 @@ function WeeklyPage() {
     fetchWeeklyPlan,
     createWeeklyTask,
     toggleWeeklyTask,
+    editWeeklyTask,
+    removeWeeklyTask,
   } = useWeeklyStore();
+
+  const { showToast } = useToastStore();
 
   const [newTask, setNewTask] = useState("");
   const [countdown, setCountdown] = useState(getCountdownToSundayMidnight());
@@ -66,25 +161,55 @@ function WeeklyPage() {
     const trimmed = newTask.trim();
     if (!trimmed) return;
 
-    await createWeeklyTask(trimmed);
-    setNewTask("");
+    const result = await createWeeklyTask(trimmed);
+    if (result) {
+      setNewTask("");
+      showToast({
+        message: "Weekly task added.",
+        type: "success",
+      });
+    }
+  };
+
+  const handleEdit = async (taskId, text) => {
+    const result = await editWeeklyTask(taskId, text);
+    if (result) {
+      showToast({
+        message: "Weekly task updated.",
+        type: "success",
+      });
+    }
+    return result;
+  };
+
+  const handleDelete = async (taskId) => {
+    const result = await removeWeeklyTask(taskId);
+    if (result) {
+      showToast({
+        message: "Weekly task deleted.",
+        type: "info",
+      });
+    }
+  };
+
+  const handleToggle = async (taskId, done) => {
+    const result = await toggleWeeklyTask(taskId, done);
+    if (result) {
+      showToast({
+        message: done ? "Marked complete." : "Marked incomplete.",
+        type: "success",
+      });
+    }
   };
 
   return (
     <div className="daily-page">
-      <div className="daily-header">
-        <div>
-          <h2 className="section-title">Weekly</h2>
+      <div className="daily-topbar">
+        <div className="daily-topbar-left">
+          <h2 className="section-title">This Week</h2>
           <p className="section-subtitle">
             Week starting {weeklyPlan?.weekStart || "-"}
           </p>
-        </div>
-
-        <div className="countdown-card">
-          <div className="countdown-label">Until Sunday midnight</div>
-          <div className="countdown-value weekly-countdown-value">
-            {countdown}
-          </div>
         </div>
       </div>
 
@@ -92,102 +217,83 @@ function WeeklyPage() {
       {error && <p className="error-text">{error}</p>}
 
       {!loading && weeklyPlan && (
-        <>
-          <div className="metrics-grid">
-            <MetricCard
+        <div className="daily-command-layout">
+          <div className="daily-main-column">
+            <div className="progress-card daily-main-hero">
+              <div className="progress-top">
+                <div>
+                  <h3 className="card-title">Weekly Focus</h3>
+                  <p className="progress-meta">
+                    {totalCount - completedCount} weekly task
+                    {totalCount - completedCount === 1 ? "" : "s"} remaining
+                  </p>
+                </div>
+
+                <div className="hero-focus-chip">
+                  {completedCount}/{totalCount || 0} completed
+                </div>
+              </div>
+            </div>
+
+            <form className="add-task-form" onSubmit={handleSubmit}>
+              <input
+                type="text"
+                placeholder="Add a weekly task"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+              />
+              <button type="submit" disabled={!newTask.trim()}>
+                Add Task
+              </button>
+            </form>
+
+            <div className="task-section">
+              <h3 className="task-section-title">Weekly Tasks</h3>
+
+              <div className="task-list">
+                {weeklyPlan.tasks.length === 0 ? (
+                  <div className="empty-state">No weekly tasks yet.</div>
+                ) : (
+                  weeklyPlan.tasks.map((task) => (
+                    <WeeklyTaskRow
+                      key={task._id}
+                      task={task}
+                      onToggle={handleToggle}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          <aside className="daily-side-column">
+            <WeeklyStatCard
+              title="Time Left"
+              value={countdown}
+              subtitle="Until Sunday midnight"
+            />
+
+            <WeeklyStatCard
               title="Weekly Score"
               value={`${weeklyPlan.weeklyScore}%`}
               subtitle="Overall weekly performance"
             />
-            <MetricCard
+
+            <WeeklyStatCard
               title="Task Completion"
               value={`${weeklyPlan.taskCompletionPercentage}%`}
               subtitle={`${completedCount} of ${totalCount} weekly tasks done`}
             />
-            <MetricCard
+
+            <WeeklyStatCard
               title="Daily Consistency"
               value={`${weeklyPlan.dailyConsistencyPercentage}%`}
               subtitle="Average daily completion this week"
             />
-            <MetricCard
-              title="Days Left"
-              value={countdown.split(" ")[0]}
-              subtitle="Remaining in current week"
-            />
-          </div>
-
-          <div className="progress-card">
-            <div className="progress-top">
-              <h3 className="card-title">Weekly Summary</h3>
-              <span className="task-meta">Current week</span>
-            </div>
-
-            <p className="progress-meta">
-              Weekly Score = (Task Completion × 0.7) + (Daily Consistency × 0.3)
-            </p>
-
-            <div className="progress-bar" style={{ marginTop: "12px" }}>
-              <div
-                className="progress-bar-fill"
-                style={{ width: `${weeklyPlan.weeklyScore}%` }}
-              />
-            </div>
-
-            <p className="progress-meta" style={{ marginTop: "10px" }}>
-              This week reflects both execution and consistency.
-            </p>
-          </div>
-
-          <form className="add-task-form" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              placeholder="Add a weekly task"
-              value={newTask}
-              onChange={(e) => setNewTask(e.target.value)}
-            />
-            <button type="submit" disabled={!newTask.trim()}>
-              Add Task
-            </button>
-          </form>
-
-          <div className="task-section">
-            <h3 className="task-section-title">Weekly Tasks</h3>
-
-            <div className="task-list">
-              {weeklyPlan.tasks.length === 0 ? (
-                <div className="empty-state">No weekly tasks yet.</div>
-              ) : (
-                weeklyPlan.tasks.map((task) => (
-                  <label
-                    key={task._id}
-                    className={`task-item ${task.done ? "task-done" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={task.done}
-                      onChange={(e) =>
-                        toggleWeeklyTask(task._id, e.target.checked)
-                      }
-                    />
-
-                    <div className="task-content">
-                      <div className="task-top-row">
-                        <div className="task-text">{task.text}</div>
-                        <span className="task-badge badge-template">
-                          Weekly
-                        </span>
-                      </div>
-
-                      <div className="task-meta">
-                        {task.done ? "Completed" : "Still in progress"}
-                      </div>
-                    </div>
-                  </label>
-                ))
-              )}
-            </div>
-          </div>
-        </>
+          </aside>
+        </div>
       )}
     </div>
   );

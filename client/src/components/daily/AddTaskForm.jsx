@@ -1,44 +1,29 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
-function AddTaskForm({ onAdd, disabled }) {
+function AddTaskForm({ onAdd, disabled = false }) {
   const [text, setText] = useState("");
-  const [saving, setSaving] = useState(false);
-  const inputRef = useRef(null);
-
-  const trimmedText = text.trim();
-  const isSubmitDisabled = disabled || saving || !trimmedText;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (isSubmitDisabled) return;
+    const trimmed = text.trim();
+    if (!trimmed || disabled) return;
 
-    setSaving(true);
-
-    try {
-      await onAdd(trimmedText);
-      setText("");
-
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
-    } finally {
-      setSaving(false);
-    }
+    await onAdd(trimmed);
+    setText("");
   };
 
   return (
     <form className="add-task-form" onSubmit={handleSubmit}>
       <input
-        ref={inputRef}
         type="text"
-        placeholder="Add an extra task..."
+        placeholder={disabled ? "Day is closed" : "Add an extra task"}
         value={text}
         onChange={(e) => setText(e.target.value)}
-        disabled={disabled || saving}
+        disabled={disabled}
       />
-      <button type="submit" disabled={isSubmitDisabled}>
-        {saving ? "Adding..." : "Add Task"}
+      <button type="submit" disabled={disabled || !text.trim()}>
+        Add Task
       </button>
     </form>
   );

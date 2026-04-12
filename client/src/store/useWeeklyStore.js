@@ -3,6 +3,8 @@ import {
   getCurrentWeeklyPlan,
   addWeeklyTask,
   updateWeeklyTaskStatus,
+  updateWeeklyTaskText,
+  deleteWeeklyTask,
 } from "../api/weeklyApi";
 
 const useWeeklyStore = create((set) => ({
@@ -16,33 +18,65 @@ const useWeeklyStore = create((set) => ({
     try {
       const data = await getCurrentWeeklyPlan();
       set({ weeklyPlan: data, loading: false });
+      return data;
     } catch (error) {
       set({
         loading: false,
         error: error.response?.data?.message || "Failed to load weekly plan",
       });
+      return null;
     }
   },
 
   createWeeklyTask: async (text) => {
     try {
-      const updated = await addWeeklyTask(text);
-      set({ weeklyPlan: updated });
+      const data = await addWeeklyTask(text);
+      set({ weeklyPlan: data });
+      return data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to add weekly task",
       });
+      return null;
     }
   },
 
   toggleWeeklyTask: async (taskId, done) => {
     try {
-      const updated = await updateWeeklyTaskStatus(taskId, done);
-      set({ weeklyPlan: updated });
+      const data = await updateWeeklyTaskStatus(taskId, done);
+      set({ weeklyPlan: data });
+      return data;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to update weekly task",
       });
+      return null;
+    }
+  },
+
+  editWeeklyTask: async (taskId, text) => {
+    try {
+      const data = await updateWeeklyTaskText(taskId, text);
+      set({ weeklyPlan: data });
+      return data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to edit weekly task",
+      });
+      return null;
+    }
+  },
+
+  removeWeeklyTask: async (taskId) => {
+    try {
+      const data = await deleteWeeklyTask(taskId);
+      set({ weeklyPlan: data });
+      return data;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to delete weekly task",
+      });
+      return null;
     }
   },
 }));

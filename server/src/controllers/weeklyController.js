@@ -15,6 +15,25 @@ const sanitizeWeeklyTasks = (tasks = []) => {
     }));
 };
 
+const recalculateAndSave = async (weeklyPlan, userId) => {
+  weeklyPlan.tasks = weeklyPlan.tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  weeklyPlan.taskCompletionPercentage = calculateTaskCompletionPercentage(
+    weeklyPlan.tasks
+  );
+
+  weeklyPlan.dailyConsistencyPercentage =
+    await calculateDailyConsistencyPercentage(userId, weeklyPlan.weekStart);
+
+  weeklyPlan.weeklyScore = calculateWeeklyScore(
+    weeklyPlan.taskCompletionPercentage,
+    weeklyPlan.dailyConsistencyPercentage
+  );
+
+  await weeklyPlan.save();
+  return weeklyPlan;
+};
+
 const getCurrentWeeklyPlan = async (req, res) => {
   try {
     const weeklyPlan = await getOrCreateCurrentWeeklyPlan(req.user._id);
@@ -36,19 +55,7 @@ const updateWeeklyTasks = async (req, res) => {
     const weeklyPlan = await getOrCreateCurrentWeeklyPlan(req.user._id);
     weeklyPlan.tasks = sanitizeWeeklyTasks(tasks);
 
-    weeklyPlan.taskCompletionPercentage = calculateTaskCompletionPercentage(
-      weeklyPlan.tasks
-    );
-
-    weeklyPlan.dailyConsistencyPercentage =
-      await calculateDailyConsistencyPercentage(req.user._id, weeklyPlan.weekStart);
-
-    weeklyPlan.weeklyScore = calculateWeeklyScore(
-      weeklyPlan.taskCompletionPercentage,
-      weeklyPlan.dailyConsistencyPercentage
-    );
-
-    await weeklyPlan.save();
+    await recalculateAndSave(weeklyPlan, req.user._id);
 
     return res.json(weeklyPlan);
   } catch (error) {
@@ -70,19 +77,7 @@ const updateWeeklyTaskStatus = async (req, res) => {
 
     task.done = !!done;
 
-    weeklyPlan.taskCompletionPercentage = calculateTaskCompletionPercentage(
-      weeklyPlan.tasks
-    );
-
-    weeklyPlan.dailyConsistencyPercentage =
-      await calculateDailyConsistencyPercentage(req.user._id, weeklyPlan.weekStart);
-
-    weeklyPlan.weeklyScore = calculateWeeklyScore(
-      weeklyPlan.taskCompletionPercentage,
-      weeklyPlan.dailyConsistencyPercentage
-    );
-
-    await weeklyPlan.save();
+    await recalculateAndSave(weeklyPlan, req.user._id);
 
     return res.json(weeklyPlan);
   } catch (error) {
@@ -106,19 +101,58 @@ const addWeeklyTask = async (req, res) => {
       order: weeklyPlan.tasks.length + 1,
     });
 
-    weeklyPlan.taskCompletionPercentage = calculateTaskCompletionPercentage(
-      weeklyPlan.tasks
-    );
+    await recalculateAndSave(weeklyPlan, req.user._id);
 
-    weeklyPlan.dailyConsistencyPercentage =
-      await calculateDailyConsistencyPercentage(req.user._id, weeklyPlan.weekStart);
+    return res.json(weeklyPlan);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
 
-    weeklyPlan.weeklyScore = calculateWeeklyScore(
-      weeklyPlan.taskCompletionPercentage,
-      weeklyPlan.dailyConsistencyPercentage
-    );
+const updateWeeklyTaskText = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const { text } = req.body;
 
-    await weeklyPlan.save();
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "text is required" });
+    }
+
+    const weeklyPlan = await getOrCreateCurrentWeeklyPlan(req.user._id);
+    const task = weeklyPlan.tasks.id(taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: "Weekly task not found" });
+    }
+
+    task.text = text.trim();
+
+    await recalculateAndSave(weeklyPlan, req.user._id);
+
+    return res.json(weeklyPlan);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const deleteWeeklyTask = async (req, res) => {
+  try {
+    const { taskId } = req.params;
+
+    const weeklyPlan = await getOrCreateCurrentWeeklyPlan(req.user._id);
+    const task = weeklyPlan.tasks.id(taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: "Weekly task not found" });
+    }
+
+    weeklyPlan.tasks.pull(taskId);
+
+    weeklyPlan.tasks.forEach((task, index) => {
+      task.order = index + 1;
+    });
+
+    await recalculateAndSave(weeklyPlan, req.user._id);
 
     return res.json(weeklyPlan);
   } catch (error) {
@@ -131,4 +165,6 @@ module.exports = {
   updateWeeklyTasks,
   updateWeeklyTaskStatus,
   addWeeklyTask,
+  updateWeeklyTaskText,
+  deleteWeeklyTask,
 };

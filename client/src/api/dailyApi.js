@@ -34,7 +34,23 @@ export const deleteExtraTask = async (entryId, taskId) => {
   return response.data;
 };
 
-export const processEndOfDay = async (date, action) => {
-  const response = await http.post("/daily/end-of-day", { date, action });
+export const updateDailySummary = async (entryId, summary) => {
+  const response = await http.patch(`/daily/${entryId}/summary`, {
+    summary,
+  });
+  return response.data;
+};
+
+export const reopenDailyEntry = async (entryId) => {
+  const response = await http.patch(`/daily/${entryId}/reopen`);
+  return response.data;
+};
+
+export const processEndOfDay = async (date, action, summary = "") => {
+  const response = await http.post("/daily/end-of-day", {
+    date,
+    action,
+    summary,
+  });
   return response.data;
 };

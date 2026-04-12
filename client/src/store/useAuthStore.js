@@ -18,6 +18,7 @@ const useAuthStore = create((set) => ({
   user: stored?.user || null,
   token: stored?.token || null,
   loading: false,
+  initialized: false,
   error: null,
 
   loginWithGoogleCredential: async (credential) => {
@@ -38,12 +39,14 @@ const useAuthStore = create((set) => ({
         user: data.user,
         token: data.token,
         loading: false,
+        initialized: true,
       });
 
       return data;
     } catch (error) {
       set({
         loading: false,
+        initialized: true,
         error: error.response?.data?.message || "Google login failed",
       });
       return null;
@@ -51,6 +54,8 @@ const useAuthStore = create((set) => ({
   },
 
   checkAuthStatus: async () => {
+    set({ loading: true });
+
     try {
       const data = await getAuthStatus();
 
@@ -67,12 +72,19 @@ const useAuthStore = create((set) => ({
 
         set({
           user: data.user,
+          token: existing?.token || null,
+          loading: false,
+          initialized: true,
+          error: null,
         });
       } else {
         localStorage.removeItem(STORAGE_KEY);
         set({
           user: null,
           token: null,
+          loading: false,
+          initialized: true,
+          error: null,
         });
       }
     } catch {
@@ -80,6 +92,9 @@ const useAuthStore = create((set) => ({
       set({
         user: null,
         token: null,
+        loading: false,
+        initialized: true,
+        error: null,
       });
     }
   },
@@ -91,6 +106,7 @@ const useAuthStore = create((set) => ({
       token: null,
       error: null,
       loading: false,
+      initialized: true,
     });
   },
 }));

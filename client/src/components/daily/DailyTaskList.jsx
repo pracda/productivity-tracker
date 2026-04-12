@@ -10,7 +10,6 @@ const sortTasks = (tasks = []) => {
   return [...tasks].sort((a, b) => {
     const priorityDiff = getTaskPriority(a) - getTaskPriority(b);
     if (priorityDiff !== 0) return priorityDiff;
-
     return (a.order || 0) - (b.order || 0);
   });
 };
@@ -62,21 +61,23 @@ function TaskBadge({ task }) {
   return <span className={className}>{label}</span>;
 }
 
-function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
+function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra, disabled = false }) {
   const isMoved = task.status === "moved";
   const isDone = task.done || task.status === "completed";
   const isExtra = task.type === "extra" && task.status !== "moved";
 
   const [isEditing, setIsEditing] = useState(false);
-  const [draftText, setDraftText] = useState(task.text);
+  const [draftText, setDraftText] = useState(task.text || "");
 
   useEffect(() => {
-    setDraftText(task.text);
+    setDraftText(task.text || "");
   }, [task.text]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
     e?.stopPropagation?.();
+
+    if (disabled) return;
 
     const trimmed = draftText.trim();
     if (!trimmed || !onEditExtra) return;
@@ -89,20 +90,21 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!onDeleteExtra) return;
+    if (disabled || !onDeleteExtra) return;
     await onDeleteExtra(task._id);
   };
 
   const handleStartEdit = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (disabled) return;
     setIsEditing(true);
   };
 
   const handleCancel = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDraftText(task.text);
+    setDraftText(task.text || "");
     setIsEditing(false);
   };
 
@@ -118,12 +120,14 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
 
   return (
     <div className={`task-item ${isDone ? "task-done" : ""} ${isMoved ? "task-moved" : ""}`}>
-      <input
-        type="checkbox"
-        checked={isDone}
-        disabled={isMoved}
-        onChange={(e) => onToggle(task._id, e.target.checked)}
-      />
+      <div className="task-checkbox-wrap">
+        <input
+          type="checkbox"
+          checked={isDone}
+          disabled={isMoved || disabled}
+          onChange={(e) => onToggle(task._id, e.target.checked)}
+        />
+      </div>
 
       <div className="task-content">
         <div className="task-top-row">
@@ -133,6 +137,7 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
               type="text"
               value={draftText}
               autoFocus
+              disabled={disabled}
               onChange={(e) => setDraftText(e.target.value)}
               onClick={(e) => e.stopPropagation()}
               onKeyDown={handleKeyDown}
@@ -156,19 +161,29 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
           <div className="task-actions">
             {isEditing ? (
               <>
-                <button type="button" onClick={handleSave}>
+                <button type="button" onClick={handleSave} disabled={disabled}>
                   Save
                 </button>
-                <button type="button" className="secondary-btn" onClick={handleCancel}>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={handleCancel}
+                  disabled={disabled}
+                >
                   Cancel
                 </button>
               </>
             ) : (
               <>
-                <button type="button" onClick={handleStartEdit}>
+                <button type="button" onClick={handleStartEdit} disabled={disabled}>
                   Edit
                 </button>
-                <button type="button" className="danger-btn" onClick={handleDelete}>
+                <button
+                  type="button"
+                  className="danger-btn"
+                  onClick={handleDelete}
+                  disabled={disabled}
+                >
                   Delete
                 </button>
               </>
@@ -180,7 +195,7 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra }) {
   );
 }
 
-function TaskSection({ title, tasks, onToggle, onEditExtra, onDeleteExtra }) {
+function TaskSection({ title, tasks, onToggle, onEditExtra, onDeleteExtra, disabled }) {
   if (!tasks.length) return null;
 
   return (
@@ -195,6 +210,7 @@ function TaskSection({ title, tasks, onToggle, onEditExtra, onDeleteExtra }) {
             onToggle={onToggle}
             onEditExtra={onEditExtra}
             onDeleteExtra={onDeleteExtra}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -202,9 +218,13 @@ function TaskSection({ title, tasks, onToggle, onEditExtra, onDeleteExtra }) {
   );
 }
 
-function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra }) {
+function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra, disabled = false }) {
   if (!tasks.length) {
-    return <div className="empty-state">No tasks for this day yet.</div>;
+    return (
+      <div className="empty-state">
+        No tasks for this day yet. Open “Manage Daily Templates” to customize your recurring setup.
+      </div>
+    );
   }
 
   const grouped = groupTasks(tasks);
@@ -217,6 +237,7 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra }) {
         onToggle={onToggle}
         onEditExtra={onEditExtra}
         onDeleteExtra={onDeleteExtra}
+        disabled={disabled}
       />
       <TaskSection
         title="Today’s Template"
@@ -224,6 +245,7 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra }) {
         onToggle={onToggle}
         onEditExtra={onEditExtra}
         onDeleteExtra={onDeleteExtra}
+        disabled={disabled}
       />
       <TaskSection
         title="Extra Tasks"
@@ -231,6 +253,7 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra }) {
         onToggle={onToggle}
         onEditExtra={onEditExtra}
         onDeleteExtra={onDeleteExtra}
+        disabled={disabled}
       />
       <TaskSection
         title="Moved to Next Day"
@@ -238,6 +261,7 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra }) {
         onToggle={onToggle}
         onEditExtra={onEditExtra}
         onDeleteExtra={onDeleteExtra}
+        disabled={true}
       />
     </div>
   );

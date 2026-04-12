@@ -63,6 +63,11 @@ const DailyEntrySchema = new mongoose.Schema(
       min: 0,
       max: 100,
     },
+    summary: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     endOfDayProcessed: {
       type: Boolean,
       default: false,
@@ -70,6 +75,14 @@ const DailyEntrySchema = new mongoose.Schema(
     endOfDayAction: {
       type: String,
       enum: ["carryOver", "delete", null],
+      default: null,
+    },
+    isClosed: {
+      type: Boolean,
+      default: false,
+    },
+    closedAt: {
+      type: Date,
       default: null,
     },
   },

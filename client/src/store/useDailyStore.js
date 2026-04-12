@@ -5,6 +5,8 @@ import {
   addExtraTask,
   updateExtraTask,
   deleteExtraTask,
+  updateDailySummary,
+  reopenDailyEntry,
   processEndOfDay,
 } from "../api/dailyApi";
 
@@ -36,10 +38,12 @@ const useDailyStore = create((set, get) => ({
     try {
       const updated = await updateDailyTaskStatus(entry._id, taskId, done);
       set({ entry: updated });
+      return updated;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to update task",
       });
+      return null;
     }
   },
 
@@ -50,48 +54,82 @@ const useDailyStore = create((set, get) => ({
     try {
       const updated = await addExtraTask(entry._id, text);
       set({ entry: updated });
+      return updated;
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to add extra task",
       });
+      return null;
     }
   },
 
   editExtraTask: async (taskId, text) => {
-  const { entry } = get();
-  if (!entry) return;
+    const { entry } = get();
+    if (!entry) return;
 
-  try {
-    const updated = await updateExtraTask(entry._id, taskId, text);
-    console.log("editExtraTask success:", updated);
-    set({ entry: updated });
-  } catch (error) {
-    console.error("editExtraTask error:", error);
-    set({
-      error: error.response?.data?.message || "Failed to edit extra task",
-    });
-  }
-},
-
-removeExtraTask: async (taskId) => {
-  const { entry } = get();
-  if (!entry) return;
-
-  try {
-    const updated = await deleteExtraTask(entry._id, taskId);
-    console.log("removeExtraTask success:", updated);
-    set({ entry: updated });
-  } catch (error) {
-    console.error("removeExtraTask error:", error);
-    set({
-      error: error.response?.data?.message || "Failed to delete extra task",
-    });
-  }
-},
-
-  runEndOfDay: async (date, action) => {
     try {
-      const result = await processEndOfDay(date, action);
+      const updated = await updateExtraTask(entry._id, taskId, text);
+      set({ entry: updated });
+      return updated;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to edit extra task",
+      });
+      return null;
+    }
+  },
+
+  removeExtraTask: async (taskId) => {
+    const { entry } = get();
+    if (!entry) return;
+
+    try {
+      const updated = await deleteExtraTask(entry._id, taskId);
+      set({ entry: updated });
+      return updated;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to delete extra task",
+      });
+      return null;
+    }
+  },
+
+  saveSummary: async (summary) => {
+    const { entry } = get();
+    if (!entry) return null;
+
+    try {
+      const updated = await updateDailySummary(entry._id, summary);
+      set({ entry: updated });
+      return updated;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to save daily summary",
+      });
+      return null;
+    }
+  },
+
+  reopenDay: async () => {
+    const { entry } = get();
+    if (!entry) return null;
+
+    try {
+      const updated = await reopenDailyEntry(entry._id);
+      set({ entry: updated });
+      return updated;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to reopen day",
+      });
+      return null;
+    }
+  },
+
+  runEndOfDay: async (date, action, summary = "") => {
+    try {
+      const result = await processEndOfDay(date, action, summary);
       return result;
     } catch (error) {
       set({

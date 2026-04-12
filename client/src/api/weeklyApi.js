@@ -11,6 +11,16 @@ export const addWeeklyTask = async (text) => {
 };
 
 export const updateWeeklyTaskStatus = async (taskId, done) => {
-  const response = await http.patch(`/weekly/task/${taskId}`, { done });
+  const response = await http.patch(`/weekly/tasks/${taskId}/status`, { done });
+  return response.data;
+};
+
+export const updateWeeklyTaskText = async (taskId, text) => {
+  const response = await http.patch(`/weekly/tasks/${taskId}`, { text });
+  return response.data;
+};
+
+export const deleteWeeklyTask = async (taskId) => {
+  const response = await http.delete(`/weekly/tasks/${taskId}`);
   return response.data;
 };

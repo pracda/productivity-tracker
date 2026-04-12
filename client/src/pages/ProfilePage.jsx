@@ -2,25 +2,30 @@ import GoogleLoginButton from "../components/auth/GoogleLoginButton";
 import useAuthStore from "../store/useAuthStore";
 
 function ProfilePage() {
-  const { user, logout, error } = useAuthStore();
+  const { user, logout, error, loading, initialized } = useAuthStore();
 
-  if (!user) {
+  const getInitials = (name) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  if (!initialized) {
     return (
       <div className="daily-page">
-        <div>
-          <h2 className="section-title">Profile</h2>
-          <p className="section-subtitle">
-            Sign in with Google to access your planner.
-          </p>
+        <div className="daily-topbar">
+          <div className="daily-topbar-left">
+            <h2 className="section-title">Profile</h2>
+            <p className="section-subtitle">Loading your account...</p>
+          </div>
         </div>
 
-        {error && <p className="error-text">{error}</p>}
-
-        <div className="progress-card">
-          <h3 className="card-title" style={{ marginBottom: "16px" }}>
-            Sign In
-          </h3>
-          <GoogleLoginButton />
+        <div className="progress-card profile-card">
+          <p className="progress-meta">Checking authentication status...</p>
         </div>
       </div>
     );
@@ -28,39 +33,85 @@ function ProfilePage() {
 
   return (
     <div className="daily-page">
-      <div>
-        <h2 className="section-title">Profile</h2>
-        <p className="section-subtitle">Signed in user information</p>
-      </div>
-
-      <div className="progress-card">
-        <div className="progress-top">
-          <h3 className="card-title">{user.name}</h3>
-          <button onClick={logout}>Logout</button>
-        </div>
-
-        <p className="progress-meta">Email: {user.email}</p>
-        <p className="progress-meta">Provider: {user.provider}</p>
-
-        {user.avatarUrl && (
-          <img
-            src={user.avatarUrl}
-            alt={user.name}
-            style={{
-              width: "72px",
-              height: "72px",
-              borderRadius: "50%",
-              marginTop: "12px",
-            }}
-          />
-        )}
-
-        <div style={{ marginTop: "18px" }}>
-          <p className="progress-meta">
-            Your planner pages are now protected behind Google login.
+      <div className="daily-topbar">
+        <div className="daily-topbar-left">
+          <h2 className="section-title">Profile</h2>
+          <p className="section-subtitle">
+            Manage your account and authentication
           </p>
         </div>
       </div>
+
+      {!user && (
+        <div className="progress-card profile-card">
+          <div className="progress-top">
+            <div>
+              <h3 className="card-title">Sign in</h3>
+              <p className="progress-meta">
+                Sign in with Google to access your personal planner.
+              </p>
+            </div>
+          </div>
+
+          {error && <p className="error-text" style={{ marginTop: "14px" }}>{error}</p>}
+
+          <div className="profile-login-section">
+            <GoogleLoginButton />
+          </div>
+
+          {loading && (
+            <p className="progress-meta" style={{ marginTop: "14px" }}>
+              Signing you in...
+            </p>
+          )}
+        </div>
+      )}
+
+      {user && (
+        <div className="progress-card profile-card">
+          <div className="profile-top">
+            {user.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.name}
+                className="profile-avatar"
+              />
+            ) : (
+              <div className="profile-avatar profile-avatar-fallback">
+                {getInitials(user.name)}
+              </div>
+            )}
+
+            <div>
+              <h3 className="card-title">{user.name}</h3>
+              <p className="progress-meta">{user.email}</p>
+            </div>
+          </div>
+
+          <div className="profile-info-block">
+            <div className="goal-summary-row">
+              <span className="progress-meta">Authentication</span>
+              <span className="task-badge badge-success">Active</span>
+            </div>
+
+            <div className="goal-summary-row">
+              <span className="progress-meta">Account Type</span>
+              <span className="progress-meta">Google OAuth</span>
+            </div>
+
+            <div className="goal-summary-row">
+              <span className="progress-meta">Status</span>
+              <span className="progress-meta">Signed in</span>
+            </div>
+          </div>
+
+          <div className="goal-actions" style={{ marginTop: "18px" }}>
+            <button className="danger-btn" onClick={logout}>
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

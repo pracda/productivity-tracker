@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
+const { seedDefaultPlannerIfEmpty } = require("../utils/seedDefaultPlanner");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -52,6 +53,8 @@ const googleLogin = async (req, res) => {
       user.avatarUrl = payload.picture || user.avatarUrl || null;
       await user.save();
     }
+
+    await seedDefaultPlannerIfEmpty(user._id);
 
     const token = signAppToken(user);
 
