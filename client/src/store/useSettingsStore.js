@@ -2,14 +2,13 @@ import { create } from "zustand";
 import {
   getPersonalTasks,
   updatePersonalTasks,
-  getDailyTemplate,
-  updateDailyTemplate,
 } from "../api/settingsApi";
+import { getRoutine, updateRoutine } from "../api/routineApi";
 
-const useSettingsStore = create((set, get) => ({
+const useSettingsStore = create((set) => ({
   personalTasks: [],
-  currentTemplate: [],
-  selectedWeekday: 1,
+  morningRoutine: [],
+  nightRoutine: [],
   loading: false,
   error: null,
 
@@ -35,26 +34,26 @@ const useSettingsStore = create((set, get) => ({
     }
   },
 
-  fetchTemplate: async (weekday) => {
-    set({ selectedWeekday: weekday });
-
+  fetchRoutine: async (type) => {
     try {
-      const data = await getDailyTemplate(weekday);
-      set({ currentTemplate: data.tasks || [] });
+      const data = await getRoutine(type);
+      if (type === "morning") set({ morningRoutine: data.tasks || [] });
+      else set({ nightRoutine: data.tasks || [] });
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Failed to load template",
+        error: error.response?.data?.message || `Failed to load ${type} routine`,
       });
     }
   },
 
-  saveTemplate: async (weekday, tasks) => {
+  saveRoutine: async (type, tasks) => {
     try {
-      const updated = await updateDailyTemplate(weekday, tasks);
-      set({ currentTemplate: updated.tasks || [] });
+      const updated = await updateRoutine(type, tasks);
+      if (type === "morning") set({ morningRoutine: updated.tasks || [] });
+      else set({ nightRoutine: updated.tasks || [] });
     } catch (error) {
       set({
-        error: error.response?.data?.message || "Failed to save template",
+        error: error.response?.data?.message || `Failed to save ${type} routine`,
       });
     }
   },

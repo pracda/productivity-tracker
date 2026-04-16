@@ -22,7 +22,7 @@ const DailyEntryTaskSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["personal", "template", "extra"],
+      enum: ["personal", "template", "morning", "night", "extra"],
       required: true,
     },
     sourceTaskId: {
@@ -36,6 +36,14 @@ const DailyEntryTaskSchema = new mongoose.Schema(
     order: {
       type: Number,
       default: 0,
+    },
+    scheduledTime: {
+      type: String,
+      default: null,
+    },
+    estimatedDuration: {
+      type: Number,
+      default: null,
     },
   },
   { _id: true }

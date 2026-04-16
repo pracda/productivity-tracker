@@ -28,9 +28,9 @@ const useWeeklyStore = create((set) => ({
     }
   },
 
-  createWeeklyTask: async (text) => {
+  createWeeklyTask: async ({ text, scheduledTime, estimatedDuration, dayOfWeek }) => {
     try {
-      const data = await addWeeklyTask(text);
+      const data = await addWeeklyTask({ text, scheduledTime, estimatedDuration, dayOfWeek });
       set({ weeklyPlan: data });
       return data;
     } catch (error) {
@@ -54,9 +54,9 @@ const useWeeklyStore = create((set) => ({
     }
   },
 
-  editWeeklyTask: async (taskId, text) => {
+  editWeeklyTask: async (taskId, { text, scheduledTime, estimatedDuration, dayOfWeek }) => {
     try {
-      const data = await updateWeeklyTaskText(taskId, text);
+      const data = await updateWeeklyTaskText(taskId, { text, scheduledTime, estimatedDuration, dayOfWeek });
       set({ weeklyPlan: data });
       return data;
     } catch (error) {

@@ -87,7 +87,7 @@ const updateWeeklyTaskStatus = async (req, res) => {
 
 const addWeeklyTask = async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, scheduledTime, estimatedDuration, dayOfWeek } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
@@ -99,6 +99,9 @@ const addWeeklyTask = async (req, res) => {
       text: text.trim(),
       done: false,
       order: weeklyPlan.tasks.length + 1,
+      scheduledTime: scheduledTime || null,
+      estimatedDuration: estimatedDuration ? Number(estimatedDuration) : null,
+      dayOfWeek: dayOfWeek != null ? Number(dayOfWeek) : null,
     });
 
     await recalculateAndSave(weeklyPlan, req.user._id);
@@ -112,7 +115,7 @@ const addWeeklyTask = async (req, res) => {
 const updateWeeklyTaskText = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const { text } = req.body;
+    const { text, scheduledTime, estimatedDuration, dayOfWeek } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
@@ -126,6 +129,9 @@ const updateWeeklyTaskText = async (req, res) => {
     }
 
     task.text = text.trim();
+    if (scheduledTime !== undefined) task.scheduledTime = scheduledTime || null;
+    if (estimatedDuration !== undefined) task.estimatedDuration = estimatedDuration ? Number(estimatedDuration) : null;
+    if (dayOfWeek !== undefined) task.dayOfWeek = dayOfWeek != null ? Number(dayOfWeek) : null;
 
     await recalculateAndSave(weeklyPlan, req.user._id);
 

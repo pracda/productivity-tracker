@@ -324,16 +324,63 @@ textarea:focus {
 .goal-create-form,
 .goal-form-grid,
 .task-editor-row,
+.routine-editor-row,
 .goal-actions,
 .task-actions {
   display: flex;
   gap: 12px;
 }
 
+.routine-editor-row {
+  align-items: center;
+}
+
+.routine-task-text {
+  flex: 1 1 auto;
+}
+
+.routine-task-time {
+  flex: 0 0 auto;
+  width: 140px;
+}
+
+.routine-time-label {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 .add-task-form,
 .goal-create-form {
   flex-wrap: wrap;
   align-items: center;
+}
+
+.add-task-text-input {
+  flex: 1 1 200px;
+}
+
+.add-task-time-row {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.add-task-time-input {
+  flex: 0 0 auto;
+  width: 140px;
+}
+
+.add-task-duration-input {
+  flex: 0 0 auto;
+  width: 160px;
+}
+
+.add-task-day-select {
+  flex: 1 1 auto;
+  min-width: 120px;
 }
 
 .goal-form-grid {
@@ -474,6 +521,16 @@ textarea:focus {
 .badge-extra {
   background: #e5e7eb;
   color: #111827;
+}
+
+.badge-morning {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.badge-night {
+  background: #ede9fe;
+  color: #6d28d9;
 }
 
 .badge-carry,

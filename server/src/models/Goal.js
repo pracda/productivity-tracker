@@ -61,6 +61,14 @@ const GoalSchema = new mongoose.Schema(
       type: [GoalMilestoneSchema],
       default: [],
     },
+    scheduledTime: {
+      type: String,
+      default: null,
+    },
+    estimatedDuration: {
+      type: Number,
+      default: null,
+    },
   },
   { timestamps: true }
 );

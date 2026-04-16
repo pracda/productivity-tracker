@@ -5,8 +5,8 @@ export const getCurrentWeeklyPlan = async () => {
   return response.data;
 };
 
-export const addWeeklyTask = async (text) => {
-  const response = await http.post("/weekly/tasks", { text });
+export const addWeeklyTask = async ({ text, scheduledTime, estimatedDuration, dayOfWeek }) => {
+  const response = await http.post("/weekly/tasks", { text, scheduledTime, estimatedDuration, dayOfWeek });
   return response.data;
 };
 
@@ -15,8 +15,8 @@ export const updateWeeklyTaskStatus = async (taskId, done) => {
   return response.data;
 };
 
-export const updateWeeklyTaskText = async (taskId, text) => {
-  const response = await http.patch(`/weekly/tasks/${taskId}`, { text });
+export const updateWeeklyTaskText = async (taskId, { text, scheduledTime, estimatedDuration, dayOfWeek }) => {
+  const response = await http.patch(`/weekly/tasks/${taskId}`, { text, scheduledTime, estimatedDuration, dayOfWeek });
   return response.data;
 };
 

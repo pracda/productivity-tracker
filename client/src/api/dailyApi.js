@@ -17,14 +17,14 @@ export const updateDailyTaskStatus = async (entryId, taskId, done) => {
   return response.data;
 };
 
-export const addExtraTask = async (entryId, text) => {
-  const response = await http.post(`/daily/${entryId}/tasks`, { text });
+export const addExtraTask = async (entryId, { text, scheduledTime, estimatedDuration }) => {
+  const response = await http.post(`/daily/${entryId}/tasks`, { text, scheduledTime, estimatedDuration });
   return response.data;
 };
 
-export const updateExtraTask = async (entryId, taskId, text) => {
+export const updateExtraTask = async (entryId, taskId, { text, scheduledTime, estimatedDuration }) => {
   const response = await http.patch(`/daily/${entryId}/tasks/${taskId}`, {
-    text,
+    text, scheduledTime, estimatedDuration,
   });
   return response.data;
 };

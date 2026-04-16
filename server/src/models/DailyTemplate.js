@@ -15,6 +15,14 @@ const DailyTemplateTaskSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    scheduledTime: {
+      type: String,
+      default: null,
+    },
+    estimatedDuration: {
+      type: Number,
+      default: null,
+    },
   },
   { _id: true }
 );

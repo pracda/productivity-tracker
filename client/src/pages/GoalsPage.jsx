@@ -147,6 +147,22 @@ function MilestoneEditor({ milestones, setMilestones }) {
   );
 }
 
+const formatTime = (time) => {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+};
+
+const formatDuration = (mins) => {
+  if (!mins) return null;
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+};
+
 function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
   const { showToast } = useToastStore();
 
@@ -156,6 +172,8 @@ function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
     targetDate: dayjs(goal.targetDate).format("YYYY-MM-DD"),
     progress: goal.progress,
     notes: goal.notes || "",
+    scheduledTime: goal.scheduledTime || "",
+    estimatedDuration: goal.estimatedDuration ? String(goal.estimatedDuration) : "",
   });
 
   const [milestones, setMilestones] = useState(goal.milestones || []);
@@ -167,6 +185,8 @@ function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
       targetDate: dayjs(goal.targetDate).format("YYYY-MM-DD"),
       progress: goal.progress,
       notes: goal.notes || "",
+      scheduledTime: goal.scheduledTime || "",
+      estimatedDuration: goal.estimatedDuration ? String(goal.estimatedDuration) : "",
     });
     setMilestones(goal.milestones || []);
   }, [goal]);
@@ -185,6 +205,8 @@ function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
       progress: clampProgress(form.progress),
       notes: form.notes,
       milestones,
+      scheduledTime: form.scheduledTime || null,
+      estimatedDuration: form.estimatedDuration ? Number(form.estimatedDuration) : null,
     });
 
     if (result) {
@@ -246,6 +268,15 @@ function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
         </span>
       </div>
 
+      {(goal.scheduledTime || goal.estimatedDuration) && (
+        <div className="task-meta" style={{ marginTop: "6px" }}>
+          {[formatTime(goal.scheduledTime), formatDuration(goal.estimatedDuration)]
+            .filter(Boolean)
+            .join(" · ")}
+          {" per session"}
+        </div>
+      )}
+
       <div className="goal-form-grid" style={{ marginTop: "18px" }}>
         <input
           type="text"
@@ -277,6 +308,23 @@ function GoalCard({ goal, history, onUpdate, onLoadHistory }) {
             setForm({ ...form, progress: clampProgress(e.target.value) })
           }
           placeholder="Progress %"
+        />
+
+        <input
+          type="time"
+          value={form.scheduledTime}
+          onChange={(e) => setForm({ ...form, scheduledTime: e.target.value })}
+          title="Daily session time (optional)"
+        />
+
+        <input
+          type="number"
+          min="1"
+          max="480"
+          placeholder="Session duration (min)"
+          value={form.estimatedDuration}
+          onChange={(e) => setForm({ ...form, estimatedDuration: e.target.value })}
+          title="Estimated session duration in minutes"
         />
       </div>
 
@@ -351,6 +399,8 @@ function GoalsPage() {
     targetDate: "",
     progress: 0,
     notes: "",
+    scheduledTime: "",
+    estimatedDuration: "",
   });
 
   const [newMilestones, setNewMilestones] = useState([]);
@@ -373,6 +423,8 @@ function GoalsPage() {
       progress: clampProgress(newGoal.progress),
       notes: newGoal.notes,
       milestones: newMilestones,
+      scheduledTime: newGoal.scheduledTime || null,
+      estimatedDuration: newGoal.estimatedDuration ? Number(newGoal.estimatedDuration) : null,
     });
 
     if (result) {
@@ -382,6 +434,8 @@ function GoalsPage() {
         targetDate: "",
         progress: 0,
         notes: "",
+        scheduledTime: "",
+        estimatedDuration: "",
       });
       setNewMilestones([]);
     }
@@ -475,6 +529,23 @@ function GoalsPage() {
               })
             }
             placeholder="Progress %"
+          />
+
+          <input
+            type="time"
+            value={newGoal.scheduledTime}
+            onChange={(e) => setNewGoal({ ...newGoal, scheduledTime: e.target.value })}
+            title="Daily session time (optional)"
+          />
+
+          <input
+            type="number"
+            min="1"
+            max="480"
+            placeholder="Session duration (min)"
+            value={newGoal.estimatedDuration}
+            onChange={(e) => setNewGoal({ ...newGoal, estimatedDuration: e.target.value })}
+            title="Estimated session duration in minutes"
           />
 
           <button type="submit" disabled={isCreateDisabled}>

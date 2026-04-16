@@ -1,5 +1,5 @@
 const PersonalTask = require("../models/PersonalTask");
-const DailyTemplate = require("../models/DailyTemplate");
+const DailyRoutine = require("../models/DailyRoutine");
 const DailyEntry = require("../models/DailyEntry");
 
 const calculateCompletionPercentage = (tasks) => {
@@ -14,50 +14,50 @@ const calculateCompletionPercentage = (tasks) => {
   return Math.round((completedCount / activeTasks.length) * 100);
 };
 
-const buildDailyTasks = ({ personalTasks = [], templateTasks = [] }) => {
-  const mappedPersonalTasks = personalTasks
-    .filter((task) => task.isActive !== false)
-    .map((task, index) => ({
-      text: task.text,
-      done: false,
-      status: "active",
-      movedToDate: null,
-      type: "personal",
-      sourceTaskId: task._id,
-      carryOver: false,
-      order: index + 1,
-    }));
+const buildDailyTasks = ({ morningTasks = [], personalTasks = [], nightTasks = [] }) => {
+  let order = 1;
 
-  const mappedTemplateTasks = templateTasks
-    .filter((task) => task.isActive !== false)
-    .map((task, index) => ({
-      text: task.text,
-      done: false,
-      status: "active",
-      movedToDate: null,
-      type: "template",
-      sourceTaskId: task._id,
-      carryOver: false,
-      order: mappedPersonalTasks.length + index + 1,
-    }));
+  const mapTasks = (tasks, type) =>
+    tasks
+      .filter((task) => task.isActive !== false)
+      .map((task) => ({
+        text: task.text,
+        done: false,
+        status: "active",
+        movedToDate: null,
+        type,
+        sourceTaskId: task._id,
+        carryOver: false,
+        order: order++,
+        scheduledTime: task.scheduledTime || null,
+        estimatedDuration: task.estimatedDuration || null,
+      }));
 
-  return [...mappedPersonalTasks, ...mappedTemplateTasks];
+  return [
+    ...mapTasks(morningTasks, "morning"),
+    ...mapTasks(personalTasks, "personal"),
+    ...mapTasks(nightTasks, "night"),
+  ];
 };
 
-const getOrCreateDailyEntry = async ({ userId, date, weekday }) => {
+const getOrCreateDailyEntry = async ({ userId, date }) => {
   let entry = await DailyEntry.findOne({ userId, date });
 
   if (entry) {
     return entry;
   }
 
-  const personalTaskDoc = await PersonalTask.findOne({ userId });
-  const dailyTemplateDoc = await DailyTemplate.findOne({ userId, weekday });
+  const [personalTaskDoc, morningRoutineDoc, nightRoutineDoc] = await Promise.all([
+    PersonalTask.findOne({ userId }),
+    DailyRoutine.findOne({ userId, type: "morning" }),
+    DailyRoutine.findOne({ userId, type: "night" }),
+  ]);
 
   const personalTasks = personalTaskDoc?.tasks || [];
-  const templateTasks = dailyTemplateDoc?.tasks || [];
+  const morningTasks = morningRoutineDoc?.tasks || [];
+  const nightTasks = nightRoutineDoc?.tasks || [];
 
-  const tasks = buildDailyTasks({ personalTasks, templateTasks });
+  const tasks = buildDailyTasks({ morningTasks, personalTasks, nightTasks });
   const completionPercentage = calculateCompletionPercentage(tasks);
 
   entry = await DailyEntry.create({

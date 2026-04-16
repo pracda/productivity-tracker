@@ -1,11 +1,15 @@
 const mongoose = require("mongoose");
 
-const PersonalTaskItemSchema = new mongoose.Schema(
+const DailyRoutineTaskSchema = new mongoose.Schema(
   {
     text: {
       type: String,
       required: true,
       trim: true,
+    },
+    scheduledTime: {
+      type: String,
+      default: null,
     },
     isActive: {
       type: Boolean,
@@ -15,19 +19,11 @@ const PersonalTaskItemSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    scheduledTime: {
-      type: String,
-      default: null,
-    },
-    estimatedDuration: {
-      type: Number,
-      default: null,
-    },
   },
   { _id: true }
 );
 
-const PersonalTaskSchema = new mongoose.Schema(
+const DailyRoutineSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -35,12 +31,19 @@ const PersonalTaskSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    type: {
+      type: String,
+      enum: ["morning", "night"],
+      required: true,
+    },
     tasks: {
-      type: [PersonalTaskItemSchema],
+      type: [DailyRoutineTaskSchema],
       default: [],
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("PersonalTask", PersonalTaskSchema);
+DailyRoutineSchema.index({ userId: 1, type: 1 }, { unique: true });
+
+module.exports = mongoose.model("DailyRoutine", DailyRoutineSchema);

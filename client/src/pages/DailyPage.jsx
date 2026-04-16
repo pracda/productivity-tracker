@@ -6,6 +6,7 @@ import useToastStore from "../store/useToastStore";
 import DailyTaskList from "../components/daily/DailyTaskList";
 import AddTaskForm from "../components/daily/AddTaskForm";
 import TaskEditor from "../components/daily/TaskEditor";
+import RoutineEditor from "../components/daily/RoutineEditor";
 import EndOfDayPanel from "../components/daily/EndOfDayPanel";
 import DailyCompletionDonut from "../components/daily/DailyCompletionDonut";
 
@@ -33,15 +34,6 @@ const getCountdownToEndOfDay = (date) => {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 };
 
-const weekdayOptions = [
-  { label: "Sunday", value: 0 },
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-];
 
 function DailyPage() {
   const {
@@ -60,12 +52,12 @@ function DailyPage() {
 
   const {
     personalTasks,
-    currentTemplate,
-    selectedWeekday,
+    morningRoutine,
+    nightRoutine,
     fetchPersonalTasks,
     savePersonalTasks,
-    fetchTemplate,
-    saveTemplate,
+    fetchRoutine,
+    saveRoutine,
   } = useSettingsStore();
 
   const { showToast } = useToastStore();
@@ -81,8 +73,9 @@ function DailyPage() {
   useEffect(() => {
     fetchDailyEntry(selectedDate);
     fetchPersonalTasks();
-    fetchTemplate(dayjs(selectedDate).day());
-  }, [selectedDate, fetchDailyEntry, fetchPersonalTasks, fetchTemplate]);
+    fetchRoutine("morning");
+    fetchRoutine("night");
+  }, [selectedDate, fetchDailyEntry, fetchPersonalTasks, fetchRoutine]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -151,16 +144,16 @@ function DailyPage() {
     }
   };
 
-  const handleAddExtraTask = async (text) => {
-    await createExtraTask(text);
+  const handleAddExtraTask = async ({ text, scheduledTime, estimatedDuration }) => {
+    await createExtraTask({ text, scheduledTime, estimatedDuration });
     showToast({
       message: "Extra task added.",
       type: "success",
     });
   };
 
-  const handleEditExtraTask = async (taskId, text) => {
-    await editExtraTask(taskId, text);
+  const handleEditExtraTask = async (taskId, taskData) => {
+    await editExtraTask(taskId, taskData);
     showToast({
       message: "Extra task updated.",
       type: "success",
@@ -273,43 +266,29 @@ function DailyPage() {
 
             <div className="goal-actions">
               <button onClick={() => setShowSetup((prev) => !prev)}>
-                {showSetup ? "Hide Setup" : "Manage Daily Templates"}
+                {showSetup ? "Hide Setup" : "Manage Routines"}
               </button>
             </div>
 
             {showSetup && (
               <div className="daily-page">
+                <RoutineEditor
+                  title="Morning Routine"
+                  tasks={morningRoutine}
+                  onSave={(tasks) => saveRoutine("morning", tasks)}
+                />
+
                 <TaskEditor
                   title="Personal Tasks (Every Day)"
                   tasks={personalTasks}
                   onSave={savePersonalTasks}
                 />
 
-                <div className="progress-card">
-                  <div className="progress-top">
-                    <h3 className="card-title">Weekday Template Tasks</h3>
-                  </div>
-
-                  <select
-                    value={selectedWeekday}
-                    onChange={(e) => fetchTemplate(Number(e.target.value))}
-                    style={{ marginBottom: "16px" }}
-                  >
-                    {weekdayOptions.map((day) => (
-                      <option key={day.value} value={day.value}>
-                        {day.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <TaskEditor
-                    title={`Template for ${
-                      weekdayOptions.find((d) => d.value === selectedWeekday)?.label
-                    }`}
-                    tasks={currentTemplate}
-                    onSave={(tasks) => saveTemplate(selectedWeekday, tasks)}
-                  />
-                </div>
+                <RoutineEditor
+                  title="Night Routine"
+                  tasks={nightRoutine}
+                  onSave={(tasks) => saveRoutine("night", tasks)}
+                />
               </div>
             )}
           </div>

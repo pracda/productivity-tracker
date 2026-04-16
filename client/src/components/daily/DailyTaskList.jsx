@@ -16,8 +16,9 @@ const sortTasks = (tasks = []) => {
 
 const groupTasks = (tasks = []) => {
   const grouped = {
+    morning: [],
     personal: [],
-    template: [],
+    night: [],
     extra: [],
     moved: [],
   };
@@ -25,16 +26,35 @@ const groupTasks = (tasks = []) => {
   sortTasks(tasks).forEach((task) => {
     if (task.status === "moved") {
       grouped.moved.push(task);
+    } else if (task.type === "morning") {
+      grouped.morning.push(task);
     } else if (task.type === "personal") {
       grouped.personal.push(task);
-    } else if (task.type === "template") {
-      grouped.template.push(task);
+    } else if (task.type === "night") {
+      grouped.night.push(task);
     } else {
+      // 'extra' and legacy 'template' tasks
       grouped.extra.push(task);
     }
   });
 
   return grouped;
+};
+
+const formatTime = (time) => {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+};
+
+const formatDuration = (mins) => {
+  if (!mins) return null;
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 };
 
 function TaskBadge({ task }) {
@@ -47,6 +67,12 @@ function TaskBadge({ task }) {
   } else if (task.carryOver) {
     label = "Carry Over";
     className += " badge-carry";
+  } else if (task.type === "morning") {
+    label = "Morning";
+    className += " badge-morning";
+  } else if (task.type === "night") {
+    label = "Night";
+    className += " badge-night";
   } else if (task.type === "personal") {
     label = "Personal";
     className += " badge-personal";
@@ -68,10 +94,16 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra, disabled = false 
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState(task.text || "");
+  const [draftScheduledTime, setDraftScheduledTime] = useState(task.scheduledTime || "");
+  const [draftEstimatedDuration, setDraftEstimatedDuration] = useState(
+    task.estimatedDuration ? String(task.estimatedDuration) : ""
+  );
 
   useEffect(() => {
     setDraftText(task.text || "");
-  }, [task.text]);
+    setDraftScheduledTime(task.scheduledTime || "");
+    setDraftEstimatedDuration(task.estimatedDuration ? String(task.estimatedDuration) : "");
+  }, [task.text, task.scheduledTime, task.estimatedDuration]);
 
   const handleSave = async (e) => {
     e?.preventDefault?.();
@@ -82,14 +114,17 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra, disabled = false 
     const trimmed = draftText.trim();
     if (!trimmed || !onEditExtra) return;
 
-    await onEditExtra(task._id, trimmed);
+    await onEditExtra(task._id, {
+      text: trimmed,
+      scheduledTime: draftScheduledTime || null,
+      estimatedDuration: draftEstimatedDuration ? Number(draftEstimatedDuration) : null,
+    });
     setIsEditing(false);
   };
 
   const handleDelete = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (disabled || !onDeleteExtra) return;
     await onDeleteExtra(task._id);
   };
@@ -105,18 +140,30 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra, disabled = false 
     e.preventDefault();
     e.stopPropagation();
     setDraftText(task.text || "");
+    setDraftScheduledTime(task.scheduledTime || "");
+    setDraftEstimatedDuration(task.estimatedDuration ? String(task.estimatedDuration) : "");
     setIsEditing(false);
   };
 
   const handleKeyDown = async (e) => {
-    if (e.key === "Enter") {
-      await handleSave(e);
-    }
-
-    if (e.key === "Escape") {
-      handleCancel(e);
-    }
+    if (e.key === "Enter") await handleSave(e);
+    if (e.key === "Escape") handleCancel(e);
   };
+
+  const scheduleMeta = [
+    formatTime(task.scheduledTime),
+    formatDuration(task.estimatedDuration),
+  ].filter(Boolean).join(" · ");
+
+  const metaLabel = isMoved
+    ? `Moved to ${task.movedToDate}`
+    : task.carryOver
+    ? "Carried over from previous day"
+    : task.type === "morning"
+    ? "Morning routine"
+    : task.type === "night"
+    ? "Night routine"
+    : "Scheduled for today";
 
   return (
     <div className={`task-item ${isDone ? "task-done" : ""} ${isMoved ? "task-moved" : ""}`}>
@@ -149,12 +196,33 @@ function TaskRow({ task, onToggle, onEditExtra, onDeleteExtra, disabled = false 
           <TaskBadge task={task} />
         </div>
 
+        {isEditing && (
+          <div className="add-task-time-row" style={{ marginTop: "8px" }}>
+            <input
+              type="time"
+              value={draftScheduledTime}
+              onChange={(e) => setDraftScheduledTime(e.target.value)}
+              disabled={disabled}
+              title="Scheduled time (optional)"
+              className="add-task-time-input"
+            />
+            <input
+              type="number"
+              min="1"
+              max="480"
+              placeholder="Duration (min)"
+              value={draftEstimatedDuration}
+              onChange={(e) => setDraftEstimatedDuration(e.target.value)}
+              disabled={disabled}
+              title="Estimated duration in minutes"
+              className="add-task-duration-input"
+            />
+          </div>
+        )}
+
         <div className="task-meta">
-          {isMoved
-            ? `Moved to ${task.movedToDate}`
-            : task.carryOver
-            ? "Carried over from previous day"
-            : "Scheduled for this day"}
+          {metaLabel}
+          {scheduleMeta && !isEditing && <span> · {scheduleMeta}</span>}
         </div>
 
         {isExtra && (
@@ -222,7 +290,7 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra, disabled =
   if (!tasks.length) {
     return (
       <div className="empty-state">
-        No tasks for this day yet. Open “Manage Daily Templates” to customize your recurring setup.
+        No tasks for this day yet. Open "Manage Routines" to set up your morning and night routines.
       </div>
     );
   }
@@ -232,6 +300,14 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra, disabled =
   return (
     <div className="grouped-task-list">
       <TaskSection
+        title="Morning Routine"
+        tasks={grouped.morning}
+        onToggle={onToggle}
+        onEditExtra={onEditExtra}
+        onDeleteExtra={onDeleteExtra}
+        disabled={disabled}
+      />
+      <TaskSection
         title="Personal Tasks"
         tasks={grouped.personal}
         onToggle={onToggle}
@@ -240,8 +316,8 @@ function DailyTaskList({ tasks, onToggle, onEditExtra, onDeleteExtra, disabled =
         disabled={disabled}
       />
       <TaskSection
-        title="Today’s Template"
-        tasks={grouped.template}
+        title="Night Routine"
+        tasks={grouped.night}
         onToggle={onToggle}
         onEditExtra={onEditExtra}
         onDeleteExtra={onDeleteExtra}

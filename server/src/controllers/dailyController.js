@@ -19,11 +19,9 @@ const getDailyEntryByDate = async (req, res) => {
       return res.status(400).json({ message: "Invalid date format" });
     }
 
-    const weekday = parsed.day();
     const entry = await getOrCreateDailyEntry({
       userId: req.user._id,
       date,
-      weekday,
     });
 
     return res.json(sortTasksInEntry(entry));
@@ -124,7 +122,7 @@ const updateDailyTaskStatus = async (req, res) => {
 const addExtraTask = async (req, res) => {
   try {
     const { entryId } = req.params;
-    const { text } = req.body;
+    const { text, scheduledTime, estimatedDuration } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
@@ -152,6 +150,8 @@ const addExtraTask = async (req, res) => {
       sourceTaskId: null,
       carryOver: false,
       order: entry.tasks.length + 1,
+      scheduledTime: scheduledTime || null,
+      estimatedDuration: estimatedDuration ? Number(estimatedDuration) : null,
     });
 
     entry.completionPercentage = calculateCompletionPercentage(entry.tasks);
@@ -167,7 +167,7 @@ const addExtraTask = async (req, res) => {
 const updateExtraTask = async (req, res) => {
   try {
     const { entryId, taskId } = req.params;
-    const { text } = req.body;
+    const { text, scheduledTime, estimatedDuration } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: "text is required" });
@@ -201,6 +201,8 @@ const updateExtraTask = async (req, res) => {
     }
 
     task.text = text.trim();
+    if (scheduledTime !== undefined) task.scheduledTime = scheduledTime || null;
+    if (estimatedDuration !== undefined) task.estimatedDuration = estimatedDuration ? Number(estimatedDuration) : null;
 
     await entry.save();
 
@@ -334,7 +336,6 @@ const processEndOfDay = async (req, res) => {
     }
 
     const nextDate = dayjs(date).add(1, "day").format("YYYY-MM-DD");
-    const nextWeekday = dayjs(nextDate).day();
 
     let nextEntry = await DailyEntry.findOne({
       userId: req.user._id,
@@ -345,7 +346,6 @@ const processEndOfDay = async (req, res) => {
       nextEntry = await getOrCreateDailyEntry({
         userId: req.user._id,
         date: nextDate,
-        weekday: nextWeekday,
       });
     }
 
@@ -358,6 +358,8 @@ const processEndOfDay = async (req, res) => {
       sourceTaskId: null,
       carryOver: true,
       order: nextEntry.tasks.length + index + 1,
+      scheduledTime: task.scheduledTime || null,
+      estimatedDuration: task.estimatedDuration || null,
     }));
 
     nextEntry.tasks.push(...carryOverTasks);

@@ -15,6 +15,20 @@ const WeeklyTaskSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    scheduledTime: {
+      type: String,
+      default: null,
+    },
+    estimatedDuration: {
+      type: Number,
+      default: null,
+    },
+    dayOfWeek: {
+      type: Number,
+      min: 0,
+      max: 6,
+      default: null,
+    },
   },
   { _id: true }
 );

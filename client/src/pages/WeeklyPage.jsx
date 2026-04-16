@@ -3,6 +3,9 @@ import dayjs from "dayjs";
 import useWeeklyStore from "../store/useWeeklyStore";
 import useToastStore from "../store/useToastStore";
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
 const getCountdownToSundayMidnight = () => {
   const now = dayjs();
   const endOfWeek = dayjs().endOf("week");
@@ -18,6 +21,22 @@ const getCountdownToSundayMidnight = () => {
   const seconds = totalSeconds % 60;
 
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+};
+
+const formatTime = (time) => {
+  if (!time) return null;
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
+};
+
+const formatDuration = (mins) => {
+  if (!mins) return null;
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
 };
 
 function WeeklyStatCard({ title, value, subtitle }) {
@@ -37,20 +56,41 @@ function WeeklyStatCard({ title, value, subtitle }) {
 function WeeklyTaskRow({ task, onToggle, onEdit, onDelete }) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState(task.text || "");
+  const [draftScheduledTime, setDraftScheduledTime] = useState(task.scheduledTime || "");
+  const [draftEstimatedDuration, setDraftEstimatedDuration] = useState(
+    task.estimatedDuration ? String(task.estimatedDuration) : ""
+  );
+  const [draftDayOfWeek, setDraftDayOfWeek] = useState(
+    task.dayOfWeek != null ? String(task.dayOfWeek) : ""
+  );
 
   useEffect(() => {
     setDraftText(task.text || "");
-  }, [task.text]);
+    setDraftScheduledTime(task.scheduledTime || "");
+    setDraftEstimatedDuration(task.estimatedDuration ? String(task.estimatedDuration) : "");
+    setDraftDayOfWeek(task.dayOfWeek != null ? String(task.dayOfWeek) : "");
+  }, [task.text, task.scheduledTime, task.estimatedDuration, task.dayOfWeek]);
 
   const handleSave = async () => {
     const trimmed = draftText.trim();
     if (!trimmed) return;
 
-    const result = await onEdit(task._id, trimmed);
+    const result = await onEdit(task._id, {
+      text: trimmed,
+      scheduledTime: draftScheduledTime || null,
+      estimatedDuration: draftEstimatedDuration ? Number(draftEstimatedDuration) : null,
+      dayOfWeek: draftDayOfWeek !== "" ? Number(draftDayOfWeek) : null,
+    });
     if (result) {
       setIsEditing(false);
     }
   };
+
+  const scheduleMeta = [
+    task.dayOfWeek != null ? DAY_SHORT[task.dayOfWeek] : null,
+    formatTime(task.scheduledTime),
+    formatDuration(task.estimatedDuration),
+  ].filter(Boolean).join(" · ");
 
   return (
     <div className={`task-item ${task.done ? "task-done" : ""}`}>
@@ -79,8 +119,41 @@ function WeeklyTaskRow({ task, onToggle, onEdit, onDelete }) {
           <span className="task-badge badge-template">Weekly</span>
         </div>
 
+        {isEditing && (
+          <div className="add-task-time-row" style={{ marginTop: "8px" }}>
+            <select
+              value={draftDayOfWeek}
+              onChange={(e) => setDraftDayOfWeek(e.target.value)}
+              className="add-task-day-select"
+            >
+              <option value="">Any day</option>
+              {DAY_NAMES.map((name, i) => (
+                <option key={i} value={String(i)}>{name}</option>
+              ))}
+            </select>
+            <input
+              type="time"
+              value={draftScheduledTime}
+              onChange={(e) => setDraftScheduledTime(e.target.value)}
+              title="Scheduled time (optional)"
+              className="add-task-time-input"
+            />
+            <input
+              type="number"
+              min="1"
+              max="480"
+              placeholder="Duration (min)"
+              value={draftEstimatedDuration}
+              onChange={(e) => setDraftEstimatedDuration(e.target.value)}
+              title="Estimated duration in minutes"
+              className="add-task-duration-input"
+            />
+          </div>
+        )}
+
         <div className="task-meta">
           {task.done ? "Completed" : "Still in progress"}
+          {scheduleMeta && !isEditing && <span> · {scheduleMeta}</span>}
         </div>
 
         <div className="task-actions">
@@ -94,6 +167,9 @@ function WeeklyTaskRow({ task, onToggle, onEdit, onDelete }) {
                 className="secondary-btn"
                 onClick={() => {
                   setDraftText(task.text || "");
+                  setDraftScheduledTime(task.scheduledTime || "");
+                  setDraftEstimatedDuration(task.estimatedDuration ? String(task.estimatedDuration) : "");
+                  setDraftDayOfWeek(task.dayOfWeek != null ? String(task.dayOfWeek) : "");
                   setIsEditing(false);
                 }}
               >
@@ -135,6 +211,9 @@ function WeeklyPage() {
   const { showToast } = useToastStore();
 
   const [newTask, setNewTask] = useState("");
+  const [newScheduledTime, setNewScheduledTime] = useState("");
+  const [newEstimatedDuration, setNewEstimatedDuration] = useState("");
+  const [newDayOfWeek, setNewDayOfWeek] = useState("");
   const [countdown, setCountdown] = useState(getCountdownToSundayMidnight());
 
   useEffect(() => {
@@ -161,9 +240,18 @@ function WeeklyPage() {
     const trimmed = newTask.trim();
     if (!trimmed) return;
 
-    const result = await createWeeklyTask(trimmed);
+    const result = await createWeeklyTask({
+      text: trimmed,
+      scheduledTime: newScheduledTime || null,
+      estimatedDuration: newEstimatedDuration ? Number(newEstimatedDuration) : null,
+      dayOfWeek: newDayOfWeek !== "" ? Number(newDayOfWeek) : null,
+    });
+
     if (result) {
       setNewTask("");
+      setNewScheduledTime("");
+      setNewEstimatedDuration("");
+      setNewDayOfWeek("");
       showToast({
         message: "Weekly task added.",
         type: "success",
@@ -171,8 +259,8 @@ function WeeklyPage() {
     }
   };
 
-  const handleEdit = async (taskId, text) => {
-    const result = await editWeeklyTask(taskId, text);
+  const handleEdit = async (taskId, taskData) => {
+    const result = await editWeeklyTask(taskId, taskData);
     if (result) {
       showToast({
         message: "Weekly task updated.",
@@ -241,10 +329,40 @@ function WeeklyPage() {
                 placeholder="Add a weekly task"
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
+                className="add-task-text-input"
               />
               <button type="submit" disabled={!newTask.trim()}>
                 Add Task
               </button>
+              <div className="add-task-time-row">
+                <select
+                  value={newDayOfWeek}
+                  onChange={(e) => setNewDayOfWeek(e.target.value)}
+                  className="add-task-day-select"
+                >
+                  <option value="">Any day</option>
+                  {DAY_NAMES.map((name, i) => (
+                    <option key={i} value={String(i)}>{name}</option>
+                  ))}
+                </select>
+                <input
+                  type="time"
+                  value={newScheduledTime}
+                  onChange={(e) => setNewScheduledTime(e.target.value)}
+                  title="Scheduled time (optional)"
+                  className="add-task-time-input"
+                />
+                <input
+                  type="number"
+                  min="1"
+                  max="480"
+                  placeholder="Duration (min)"
+                  value={newEstimatedDuration}
+                  onChange={(e) => setNewEstimatedDuration(e.target.value)}
+                  title="Estimated duration in minutes"
+                  className="add-task-duration-input"
+                />
+              </div>
             </form>
 
             <div className="task-section">

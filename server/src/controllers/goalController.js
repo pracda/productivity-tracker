@@ -56,6 +56,8 @@ const createGoal = async (req, res) => {
       progress = 0,
       notes = "",
       milestones = [],
+      scheduledTime,
+      estimatedDuration,
     } = req.body;
 
     if (!title || !title.trim() || !type || !targetDate) {
@@ -81,6 +83,8 @@ const createGoal = async (req, res) => {
       notes: typeof notes === "string" ? notes.trim() : "",
       archived: false,
       milestones: sanitizedMilestones,
+      scheduledTime: scheduledTime || null,
+      estimatedDuration: estimatedDuration ? Number(estimatedDuration) : null,
     });
 
     return res.status(201).json(goal);
@@ -92,7 +96,7 @@ const createGoal = async (req, res) => {
 const updateGoal = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, type, targetDate, progress, notes, archived, milestones } = req.body;
+    const { title, type, targetDate, progress, notes, archived, milestones, scheduledTime, estimatedDuration } = req.body;
 
     const goal = await Goal.findOne({ _id: id, userId: req.user._id });
 
@@ -174,6 +178,22 @@ const updateGoal = async (req, res) => {
       });
 
       goal.milestones = sanitizedMilestones;
+    }
+
+    if (typeof scheduledTime !== "undefined") {
+      const newScheduledTime = scheduledTime || null;
+      if (newScheduledTime !== (goal.scheduledTime || null)) {
+        changes.push({ field: "scheduledTime", oldValue: goal.scheduledTime || null, newValue: newScheduledTime });
+        goal.scheduledTime = newScheduledTime;
+      }
+    }
+
+    if (typeof estimatedDuration !== "undefined") {
+      const newDuration = estimatedDuration ? Number(estimatedDuration) : null;
+      if (newDuration !== (goal.estimatedDuration || null)) {
+        changes.push({ field: "estimatedDuration", oldValue: goal.estimatedDuration || null, newValue: newDuration });
+        goal.estimatedDuration = newDuration;
+      }
     }
 
     await goal.save();

@@ -47,12 +47,12 @@ const useDailyStore = create((set, get) => ({
     }
   },
 
-  createExtraTask: async (text) => {
+  createExtraTask: async ({ text, scheduledTime, estimatedDuration }) => {
     const { entry } = get();
     if (!entry) return;
 
     try {
-      const updated = await addExtraTask(entry._id, text);
+      const updated = await addExtraTask(entry._id, { text, scheduledTime, estimatedDuration });
       set({ entry: updated });
       return updated;
     } catch (error) {
@@ -63,12 +63,12 @@ const useDailyStore = create((set, get) => ({
     }
   },
 
-  editExtraTask: async (taskId, text) => {
+  editExtraTask: async (taskId, { text, scheduledTime, estimatedDuration }) => {
     const { entry } = get();
     if (!entry) return;
 
     try {
-      const updated = await updateExtraTask(entry._id, taskId, text);
+      const updated = await updateExtraTask(entry._id, taskId, { text, scheduledTime, estimatedDuration });
       set({ entry: updated });
       return updated;
     } catch (error) {
