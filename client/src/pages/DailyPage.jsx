@@ -46,6 +46,7 @@ function DailyPage() {
     editExtraTask,
     removeExtraTask,
     logTaskTime,
+    syncTemplates,
     saveSummary,
     reopenDay,
     runEndOfDay,
@@ -281,19 +282,31 @@ function DailyPage() {
                 <RoutineEditor
                   title="Morning Routine"
                   tasks={morningRoutine}
-                  onSave={(tasks) => saveRoutine("morning", tasks)}
+                  onSave={async (tasks) => {
+                    await saveRoutine("morning", tasks);
+                    await syncTemplates(selectedDate);
+                    showToast({ message: "Morning routine saved.", type: "success" });
+                  }}
                 />
 
                 <TaskEditor
                   title="Personal Tasks (Every Day)"
                   tasks={personalTasks}
-                  onSave={savePersonalTasks}
+                  onSave={async (tasks) => {
+                    await savePersonalTasks(tasks);
+                    await syncTemplates(selectedDate);
+                    showToast({ message: "Personal tasks saved.", type: "success" });
+                  }}
                 />
 
                 <RoutineEditor
                   title="Night Routine"
                   tasks={nightRoutine}
-                  onSave={(tasks) => saveRoutine("night", tasks)}
+                  onSave={async (tasks) => {
+                    await saveRoutine("night", tasks);
+                    await syncTemplates(selectedDate);
+                    showToast({ message: "Night routine saved.", type: "success" });
+                  }}
                 />
               </div>
             )}

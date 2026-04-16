@@ -9,6 +9,7 @@ import {
   reopenDailyEntry,
   processEndOfDay,
   updateTaskTime,
+  syncTemplates,
 } from "../api/dailyApi";
 
 const useDailyStore = create((set, get) => ({
@@ -76,6 +77,17 @@ const useDailyStore = create((set, get) => ({
       set({
         error: error.response?.data?.message || "Failed to edit extra task",
       });
+      return null;
+    }
+  },
+
+  syncTemplates: async (date) => {
+    try {
+      const data = await syncTemplates(date);
+      set({ entry: data });
+      return data;
+    } catch (error) {
+      set({ error: error.response?.data?.message || "Failed to sync templates" });
       return null;
     }
   },

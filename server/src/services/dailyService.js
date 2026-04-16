@@ -75,7 +75,69 @@ const getOrCreateDailyEntry = async ({ userId, date }) => {
   return entry;
 };
 
+const syncTemplatesToEntry = async ({ userId, date }) => {
+  let entry = await DailyEntry.findOne({ userId, date });
+
+  if (!entry) {
+    return getOrCreateDailyEntry({ userId, date });
+  }
+
+  const [personalTaskDoc, morningRoutineDoc, nightRoutineDoc] = await Promise.all([
+    PersonalTask.findOne({ userId }),
+    DailyRoutine.findOne({ userId, type: "morning" }),
+    DailyRoutine.findOne({ userId, type: "night" }),
+  ]);
+
+  const freshPersonal = (personalTaskDoc?.tasks || []).filter((t) => t.isActive !== false);
+  const freshMorning  = (morningRoutineDoc?.tasks || []).filter((t) => t.isActive !== false);
+  const freshNight    = (nightRoutineDoc?.tasks   || []).filter((t) => t.isActive !== false);
+
+  // For a given type: keep tasks already completed, replace all undone ones
+  // with the fresh template list.
+  const syncType = (existingTasks, freshTasks, type) => {
+    const completed = existingTasks.filter(
+      (t) => t.type === type && (t.done || t.status === "completed")
+    );
+    const fresh = freshTasks.map((t) => ({
+      text: t.text,
+      done: false,
+      status: "active",
+      movedToDate: null,
+      type,
+      sourceTaskId: t._id,
+      carryOver: false,
+      scheduledTime: t.scheduledTime || null,
+      estimatedDuration: t.estimatedDuration || null,
+      order: 0,
+    }));
+    return [...completed, ...fresh];
+  };
+
+  // Tasks that are NOT template-driven stay exactly as they are.
+  const kept = entry.tasks.filter(
+    (t) => t.type === "extra" || t.type === "template" || t.status === "moved"
+  );
+
+  const merged = [
+    ...syncType(entry.tasks, freshMorning,  "morning"),
+    ...syncType(entry.tasks, freshPersonal, "personal"),
+    ...syncType(entry.tasks, freshNight,    "night"),
+    ...kept,
+  ];
+
+  // Re-assign stable order.
+  merged.forEach((t, i) => { t.order = i + 1; });
+
+  entry.tasks = merged;
+  entry.completionPercentage = calculateCompletionPercentage(entry.tasks);
+  await entry.save();
+
+  entry.tasks = entry.tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
+  return entry;
+};
+
 module.exports = {
   calculateCompletionPercentage,
   getOrCreateDailyEntry,
+  syncTemplatesToEntry,
 };

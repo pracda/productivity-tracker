@@ -41,6 +41,11 @@ export const updateDailySummary = async (entryId, summary) => {
   return response.data;
 };
 
+export const syncTemplates = async (date) => {
+  const response = await http.post(`/daily/${date}/sync-templates`);
+  return response.data;
+};
+
 export const updateTaskTime = async (entryId, taskId, data) => {
   const response = await http.patch(`/daily/${entryId}/tasks/${taskId}/time`, data);
   return response.data;

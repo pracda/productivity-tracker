@@ -9,6 +9,7 @@ router.post("/:entryId/tasks", dailyController.addExtraTask);
 router.patch("/:entryId/tasks/:taskId", dailyController.updateExtraTask);
 router.patch("/:entryId/tasks/:taskId/time", dailyController.updateTaskTime);
 router.delete("/:entryId/tasks/:taskId", dailyController.deleteExtraTask);
+router.post("/:date/sync-templates", dailyController.syncTemplates);
 router.patch("/:entryId/summary", dailyController.updateDailySummary);
 router.patch("/:entryId/reopen", dailyController.reopenDay);
 router.post("/end-of-day", dailyController.processEndOfDay);

@@ -3,6 +3,7 @@ const DailyEntry = require("../models/DailyEntry");
 const {
   calculateCompletionPercentage,
   getOrCreateDailyEntry,
+  syncTemplatesToEntry,
 } = require("../services/dailyService");
 
 const sortTasksInEntry = (entry) => {
@@ -420,6 +421,16 @@ const reopenDay = async (req, res) => {
   }
 };
 
+const syncTemplates = async (req, res) => {
+  try {
+    const { date } = req.params;
+    const entry = await syncTemplatesToEntry({ userId: req.user._id, date });
+    return res.json(entry);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 const updateTaskTime = async (req, res) => {
   try {
     const { entryId, taskId } = req.params;
@@ -465,4 +476,5 @@ module.exports = {
   processEndOfDay,
   reopenDay,
   updateTaskTime,
+  syncTemplates,
 };
