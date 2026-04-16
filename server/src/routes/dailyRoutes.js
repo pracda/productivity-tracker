@@ -7,6 +7,7 @@ router.post("/", dailyController.createDailyEntry);
 router.patch("/task/:entryId/:taskId", dailyController.updateDailyTaskStatus);
 router.post("/:entryId/tasks", dailyController.addExtraTask);
 router.patch("/:entryId/tasks/:taskId", dailyController.updateExtraTask);
+router.patch("/:entryId/tasks/:taskId/time", dailyController.updateTaskTime);
 router.delete("/:entryId/tasks/:taskId", dailyController.deleteExtraTask);
 router.patch("/:entryId/summary", dailyController.updateDailySummary);
 router.patch("/:entryId/reopen", dailyController.reopenDay);

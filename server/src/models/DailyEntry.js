@@ -45,6 +45,22 @@ const DailyEntryTaskSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    actualStart: {
+      type: String,
+      default: null,
+    },
+    actualEnd: {
+      type: String,
+      default: null,
+    },
+    actualDuration: {
+      type: Number,
+      default: null,
+    },
+    timerStartedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { _id: true }
 );

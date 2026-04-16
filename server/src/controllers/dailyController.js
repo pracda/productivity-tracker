@@ -420,6 +420,40 @@ const reopenDay = async (req, res) => {
   }
 };
 
+const updateTaskTime = async (req, res) => {
+  try {
+    const { entryId, taskId } = req.params;
+    const { scheduledTime, actualStart, actualEnd, actualDuration, timerStartedAt } = req.body;
+
+    const entry = await DailyEntry.findOne({
+      _id: entryId,
+      userId: req.user._id,
+    });
+
+    if (!entry) {
+      return res.status(404).json({ message: "Daily entry not found" });
+    }
+
+    const task = entry.tasks.id(taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (scheduledTime !== undefined) task.scheduledTime = scheduledTime || null;
+    if (actualStart !== undefined) task.actualStart = actualStart || null;
+    if (actualEnd !== undefined) task.actualEnd = actualEnd || null;
+    if (actualDuration !== undefined) task.actualDuration = actualDuration != null ? Number(actualDuration) : null;
+    if (timerStartedAt !== undefined) task.timerStartedAt = timerStartedAt ? new Date(timerStartedAt) : null;
+
+    await entry.save();
+
+    return res.json(sortTasksInEntry(entry));
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getDailyEntryByDate,
   createDailyEntry,
@@ -430,4 +464,5 @@ module.exports = {
   updateDailySummary,
   processEndOfDay,
   reopenDay,
+  updateTaskTime,
 };

@@ -967,6 +967,76 @@ textarea:focus {
   background: #fecaca;
 }
 
+.task-tracking-meta {
+  color: #6d28d9;
+  font-size: 13px;
+}
+
+.time-panel {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.time-panel-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.time-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.time-panel-label {
+  font-size: 13px;
+  color: var(--muted);
+  width: 68px;
+  flex-shrink: 0;
+}
+
+.time-panel-input {
+  width: 130px;
+  flex-shrink: 0;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.time-panel-duration {
+  width: 80px;
+}
+
+.time-panel-hint {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.time-panel-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
+
+.timer-running {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.timer-active-btn {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  font-size: 12px;
+  padding: 4px 8px;
+  font-weight: 600;
+}
+
 .closed-day-banner {
   padding: 12px 14px;
   border-radius: 12px;

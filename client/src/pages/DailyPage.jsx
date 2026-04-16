@@ -45,6 +45,7 @@ function DailyPage() {
     createExtraTask,
     editExtraTask,
     removeExtraTask,
+    logTaskTime,
     saveSummary,
     reopenDay,
     runEndOfDay,
@@ -168,6 +169,10 @@ function DailyPage() {
     });
   };
 
+  const handleLogTaskTime = async (taskId, data) => {
+    await logTaskTime(taskId, data);
+  };
+
   const handleSaveSummary = async () => {
     setSavingSummary(true);
     const result = await saveSummary(dailySummary);
@@ -235,6 +240,7 @@ function DailyPage() {
               onToggle={toggleTask}
               onEditExtra={handleEditExtraTask}
               onDeleteExtra={handleDeleteExtraTask}
+              onLogTime={handleLogTaskTime}
               disabled={isClosed}
             />
 

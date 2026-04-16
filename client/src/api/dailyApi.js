@@ -41,6 +41,11 @@ export const updateDailySummary = async (entryId, summary) => {
   return response.data;
 };
 
+export const updateTaskTime = async (entryId, taskId, data) => {
+  const response = await http.patch(`/daily/${entryId}/tasks/${taskId}/time`, data);
+  return response.data;
+};
+
 export const reopenDailyEntry = async (entryId) => {
   const response = await http.patch(`/daily/${entryId}/reopen`);
   return response.data;

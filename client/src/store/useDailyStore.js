@@ -8,6 +8,7 @@ import {
   updateDailySummary,
   reopenDailyEntry,
   processEndOfDay,
+  updateTaskTime,
 } from "../api/dailyApi";
 
 const useDailyStore = create((set, get) => ({
@@ -74,6 +75,22 @@ const useDailyStore = create((set, get) => ({
     } catch (error) {
       set({
         error: error.response?.data?.message || "Failed to edit extra task",
+      });
+      return null;
+    }
+  },
+
+  logTaskTime: async (taskId, data) => {
+    const { entry } = get();
+    if (!entry) return;
+
+    try {
+      const updated = await updateTaskTime(entry._id, taskId, data);
+      set({ entry: updated });
+      return updated;
+    } catch (error) {
+      set({
+        error: error.response?.data?.message || "Failed to update task time",
       });
       return null;
     }
