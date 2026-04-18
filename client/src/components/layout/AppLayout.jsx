@@ -17,11 +17,45 @@ function AppLayout() {
       <ToastContainer />
 
       <header className="app-header">
-        <div>
-          <h1 className="app-title">Productivity Tracker</h1>
-          <p className="app-subtitle">
-            Personal planning, consistency tracking, and long-term execution in one place.
-          </p>
+        <div className="app-header-left">
+          <button
+            type="button"
+            className="secondary-btn hamburger-btn"
+            onClick={() => setIsWorkspaceMenuOpen((value) => !value)}
+            aria-expanded={isWorkspaceMenuOpen}
+            aria-controls="workspace-menu"
+            aria-label="Toggle workspace menu"
+          >
+            ☰
+          </button>
+
+          <div>
+            <h1 className="app-title">Productivity Tracker</h1>
+            <p className="app-subtitle">
+              Personal planning, consistency tracking, and long-term execution in one place.
+            </p>
+          </div>
+
+          <nav
+            id="workspace-menu"
+            className={`app-nav workspace-menu workspace-menu-flyout ${isWorkspaceMenuOpen ? "open" : ""}`}
+          >
+            <p className="workspace-menu-title">Explore workspace</p>
+            <div className="workspace-menu-links">
+              <NavLink to="/weekly" className={getNavClass}>
+                Weekly
+              </NavLink>
+              <NavLink to="/goals" className={getNavClass}>
+                Goals
+              </NavLink>
+              <NavLink to="/analytics" className={getNavClass}>
+                Analytics
+              </NavLink>
+              <NavLink to="/profile" className={getNavClass}>
+                Profile
+              </NavLink>
+            </div>
+          </nav>
         </div>
 
         <div className="header-user-area">
@@ -61,60 +95,20 @@ function AppLayout() {
         </div>
       </header>
 
-      <div className="workspace-layout">
-        <aside className="workspace-sidebar">
-          <NavLink to="/" end className="today-cta today-cta-sidebar">
-            <span className="today-cta-label">Today</span>
-            <span className="today-cta-caption">Instantly open to-do list</span>
-          </NavLink>
-
-          <button
-            type="button"
-            className="secondary-btn menu-toggle-btn"
-            onClick={() => setIsWorkspaceMenuOpen((value) => !value)}
-            aria-expanded={isWorkspaceMenuOpen}
-            aria-controls="workspace-menu"
-          >
-            {isWorkspaceMenuOpen ? "Hide Workspace" : "Explore Workspace"}
-          </button>
-
-          <nav
-            id="workspace-menu"
-            className={`app-nav workspace-menu ${isWorkspaceMenuOpen ? "open" : ""}`}
-          >
-            <p className="workspace-menu-title">Other areas</p>
-            <div className="workspace-menu-links">
-              <NavLink to="/weekly" className={getNavClass}>
-                Weekly
-              </NavLink>
-              <NavLink to="/goals" className={getNavClass}>
-                Goals
-              </NavLink>
-              <NavLink to="/analytics" className={getNavClass}>
-                Analytics
-              </NavLink>
-              <NavLink to="/profile" className={getNavClass}>
-                Profile
-              </NavLink>
-            </div>
-          </nav>
-        </aside>
-
-        <div className="workspace-main">
-          <div className="focus-banner">
-            <div>
-              <p className="focus-banner-label">Focus mode</p>
-              <h2>Start with Today. Everything else is one tap away.</h2>
-            </div>
-            <NavLink to="/" end className="focus-banner-action">
-              Go to Today
-            </NavLink>
+      <div className="workspace-main">
+        <div className="focus-banner">
+          <div>
+            <p className="focus-banner-label">Focus mode</p>
+            <h2>Start with Today. Everything else is one tap away.</h2>
           </div>
-
-          <main className="app-content">
-            <Outlet />
-          </main>
+          <NavLink to="/" end className="focus-banner-action">
+            Go to Today
+          </NavLink>
         </div>
+
+        <main className="app-content">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

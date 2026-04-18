@@ -118,9 +118,9 @@ textarea:focus {
   gap: 20px;
   margin-bottom: 22px;
   padding: 20px 22px;
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.9));
+  background: linear-gradient(135deg, #0f766e, #0d9488 55%, #34d399);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid rgba(15, 118, 110, 0.28);
   border-radius: 20px;
   box-shadow: var(--shadow);
   color: #f8fafc;
@@ -138,14 +138,15 @@ textarea:focus {
 
 .app-subtitle {
   margin: 6px 0 0;
-  color: rgba(226, 232, 240, 0.85);
+  color: rgba(236, 253, 245, 0.96);
   font-size: 14px;
 }
 
 .workspace-layout {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 18px;
+  align-items: start;
 }
 
 .workspace-sidebar {
@@ -163,12 +164,31 @@ textarea:focus {
   gap: 16px;
 }
 
+.app-header-left {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hamburger-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .focus-banner {
   border-radius: 20px;
   padding: 18px 20px;
-  background: linear-gradient(135deg, #0f172a, #1e293b 55%, #334155);
+  background: linear-gradient(135deg, #0f766e, #0d9488);
   color: #f8fafc;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(16, 185, 129, 0.5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -180,7 +200,8 @@ textarea:focus {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #cbd5e1;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 .focus-banner h2 {
@@ -188,11 +209,13 @@ textarea:focus {
   font-size: 23px;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(2, 44, 34, 0.32);
 }
 
 .focus-banner-action {
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(15, 118, 110, 0.35);
   color: #f8fafc;
   border-radius: 999px;
   padding: 10px 14px;
@@ -222,9 +245,6 @@ textarea:focus {
   border: 1px solid #0f766e;
   color: white;
   background: linear-gradient(135deg, #0f766e, #10b981);
-  border: 1px solid #0f172a;
-  color: white;
-  background: linear-gradient(135deg, #111827, #334155);
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -234,7 +254,7 @@ textarea:focus {
 
 .today-cta:hover {
   transform: translateY(-2px);
-  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 16px 34px rgba(15, 118, 110, 0.2);
 }
 
 .today-cta-sidebar {
@@ -263,12 +283,21 @@ textarea:focus {
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.95);
   margin-bottom: 0;
 }
 
 .workspace-menu.open {
   display: flex;
+}
+
+.workspace-menu-flyout {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  width: 340px;
+  z-index: 30;
+  box-shadow: 0 16px 34px rgba(15, 118, 110, 0.16);
 }
 
 .workspace-menu-title {
@@ -744,8 +773,8 @@ textarea:focus {
 
 .header-date-pill {
   border-radius: 999px;
-  border: 1px solid rgba(226, 232, 240, 0.35);
-  background: rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(16, 185, 129, 0.2);
   color: #f8fafc;
   font-weight: 700;
   font-size: 12px;
@@ -917,7 +946,7 @@ textarea:focus {
 
 .daily-command-layout {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(340px, 420px);
+  grid-template-columns: 75% 25%;
   gap: 22px;
   align-items: start;
 }
