@@ -1,12 +1,43 @@
 'use strict';
 
-const rateLimit = require('express-rate-limit');
+const createMemoryRateLimiter = ({
+  windowMs = 15 * 60 * 1000,
+  max = 20,
+  message = 'Too many requests from this IP, please try again after 15 minutes',
+} = {}) => {
+  const ipHits = new Map();
 
-// Create a rate limiter for authentication endpoints
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again after 15 minutes'
+  return (req, res, next) => {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const now = Date.now();
+    const existing = ipHits.get(ip);
+
+    if (!existing || now > existing.resetAt) {
+      ipHits.set(ip, {
+        count: 1,
+        resetAt: now + windowMs,
+      });
+      return next();
+    }
+
+    if (existing.count >= max) {
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((existing.resetAt - now) / 1000)
+      );
+
+      res.setHeader('Retry-After', retryAfterSeconds.toString());
+      return res.status(429).json({ message });
+    }
+
+    existing.count += 1;
+    return next();
+  };
+};
+
+const authLimiter = createMemoryRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
 });
 
 module.exports = authLimiter;
