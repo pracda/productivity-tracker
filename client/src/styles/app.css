@@ -132,6 +132,8 @@ textarea:focus {
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: -0.03em;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
 }
 
 .app-subtitle {
@@ -470,8 +472,21 @@ textarea:focus {
   gap: 12px;
 }
 
+.task-editor-row {
+  width: 100%;
+  align-items: center;
+}
+
+.task-editor-row input {
+  flex: 1 1 auto;
+}
+
 .routine-editor-row {
   align-items: center;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto auto;
+  gap: 10px;
 }
 
 .routine-task-text {
@@ -479,8 +494,7 @@ textarea:focus {
 }
 
 .routine-task-time {
-  flex: 0 0 auto;
-  width: 140px;
+  width: 100%;
 }
 
 .routine-time-label {
@@ -900,7 +914,7 @@ textarea:focus {
 
 .daily-command-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) 340px;
+  grid-template-columns: minmax(0, 2fr) minmax(340px, 420px);
   gap: 22px;
   align-items: start;
 }
@@ -1299,6 +1313,14 @@ textarea:focus {
   .add-task-form {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .routine-editor-row {
+    grid-template-columns: 1fr;
+  }
+
+  .routine-time-label {
+    white-space: normal;
   }
 
   .goal-create-form button,
